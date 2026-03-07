@@ -336,6 +336,7 @@ export default function LogAchievement() {
           <div className="animate-slide-up" style={{
             background: 'var(--color-gold-faint)', border: '1.5px solid var(--color-gold-light)',
             borderRadius: 'var(--radius-lg)', padding: '18px 18px 14px', marginBottom: 20,
+            maxWidth: '100%', minWidth: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-gold)' }} />
@@ -354,10 +355,10 @@ export default function LogAchievement() {
             </div>
 
             {/* Level indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 4, flex: '1 1 150px', minWidth: 0 }}>
                 {[1,2,3,4,5].map(i => (
-                  <div key={i} style={{ width: 26, height: 5, borderRadius: 3, background: i <= 2 ? 'var(--color-gold)' : 'var(--color-gold-light)' }} />
+                  <div key={i} style={{ height: 5, borderRadius: 3, background: i <= 2 ? 'var(--color-gold)' : 'var(--color-gold-light)' }} />
                 ))}
               </div>
               <span style={{ fontSize: 12, color: 'var(--color-ink-soft)', fontWeight: 500 }}>Second Level</span>
@@ -375,6 +376,7 @@ export default function LogAchievement() {
                   padding: '13px 14px', marginBottom: 8, cursor: 'pointer',
                   display: 'flex', gap: 10, alignItems: 'flex-start',
                   boxShadow: selectedEO === o.code ? '0 0 0 3px rgba(194,123,43,0.08)' : 'none',
+                  maxWidth: '100%', minWidth: 0,
                 }}>
                 <div style={{
                   width: 20, height: 20, borderRadius: '50%', flexShrink: 0, marginTop: 1,
@@ -386,7 +388,7 @@ export default function LogAchievement() {
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                   )}
                 </div>
-                <div>
+                <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-gold)', letterSpacing: '0.05em', marginBottom: 3 }}>{o.code}</div>
                   <div style={{ fontSize: 13, color: 'var(--color-ink)', lineHeight: 1.5 }}>{o.text}</div>
                   <div style={{ fontSize: 11, color: 'var(--color-ink-muted)', marginTop: 3, textTransform: 'capitalize' }}>{o.confidence} match</div>
