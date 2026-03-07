@@ -55,6 +55,11 @@ Every time you push to GitHub, Vercel redeploys automatically.
 3. Click **Run**
 4. You should see "Success" with no errors
 
+This now includes:
+- Core Cairn tables + RLS policies
+- `achievement_media` table for photo/video attachments
+- Private Supabase Storage bucket (`achievement-media`) and media storage policies
+
 ---
 
 ## Step 5: Seed the CfE framework data
@@ -85,17 +90,22 @@ For production you'll want to connect a custom email domain via Resend. For now 
 
 ## Step 7: Connect frontend to Supabase
 
-1. In Supabase, go to **Project Settings → API**
-2. Copy the **Project URL** and **anon public key**
-3. In Vercel, go to your project → **Settings → Environment Variables**
-4. Add these two variables:
+1. In Supabase, open your project and click **Connect** (top bar), or go to **Project Settings → API**
+2. Copy the **Project URL**
+3. In **Project Settings → API Keys**, copy your **Publishable key** (`sb_publishable_...`)
+4. In Vercel, go to your project → **Settings → Environment Variables**
+5. Add these variables:
 
 ```
 VITE_SUPABASE_URL = your-project-url
-VITE_SUPABASE_ANON_KEY = your-anon-key
+VITE_SUPABASE_PUBLISHABLE_KEY = your-publishable-key
 ```
 
-5. Go to **Deployments** and click **Redeploy** to pick up the new variables
+6. Go to **Deployments** and click **Redeploy** to pick up the new variables
+
+Notes:
+- If your code still uses `VITE_SUPABASE_ANON_KEY`, you can temporarily set that to the same publishable value.
+- Do not use `secret` or `service_role` keys in frontend or Vercel public env vars.
 
 ---
 
@@ -140,6 +150,22 @@ ANTHROPIC_API_KEY = sk-ant-...
 
 ---
 
+## Media uploads (photos/videos)
+
+For MVP, media uploads can go directly from frontend to Supabase Storage (no separate upload API required).
+
+Use this order when attaching media to an achievement:
+1. Create an `achievement_media` row first (with `achievement_id`, `school_id`, `uploaded_by`, and `storage_path`)
+2. Upload the file to Supabase Storage bucket `achievement-media` using that exact `storage_path`
+3. Read media using signed URLs (private bucket), not public URLs
+
+Notes:
+- Max file size is `250MB`
+- Allowed images: `image/jpeg`, `image/png`, `image/webp`, `image/heic`
+- Allowed videos: `video/mp4`, `video/quicktime`, `video/webm`
+
+---
+
 ## What's mock data vs real
 
 Right now the app runs on mock data defined in `src/data/mock.ts`. As you build the backend, you'll replace these one by one:
@@ -148,6 +174,7 @@ Right now the app runs on mock data defined in `src/data/mock.ts`. As you build 
 |---|---|
 | `mockPupils` | Supabase `pupils` table |
 | `mockAchievements` | Supabase `achievements` table |
+| `mockAchievements` media fields | Supabase `achievement_media` + Storage bucket `achievement-media` |
 | `mockAiSuggestions` | Real Anthropic API call |
 | `formatDate`, `getDaysSince` | Keep these — they're utility functions |
 

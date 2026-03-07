@@ -39,7 +39,7 @@ The parent experience must be warm, jargon-free, and celebratory. No CfE termino
 Parents:
 - View their child's achievement feed in plain language
 - Receive push notifications when achievements are logged
-- Submit outside-school achievements (text only in MVP)
+- Submit outside-school achievements (text with optional photo/video in MVP)
 - See a high-level picture of which areas of learning their child is active in
 
 ### Students (V2 — not MVP)
@@ -443,7 +443,6 @@ Every meaningful action logged to audit_log. Append-only. No application role ma
 - Automated report generation
 - Cohort or whole-school analytics
 - SEEMIS or Glow integrations
-- Photo attachments on achievements
 - Bulk achievement logging
 - Custom curriculum frameworks
 
