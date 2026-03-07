@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cairn — Parent View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --stone: #FAF7F2;
+    --ink: #1A1714;
+    --ink-soft: #6B6560;
+    --ink-muted: #B0AAA4;
+    --gold: #C27B2B;
+    --gold-light: #F5E6CC;
+    --gold-faint: #FDF6EC;
+    --sage: #4A6741;
+    --sage-light: #EAF0E8;
+    --sage-faint: #F3F7F2;
+    --sky: #3B6EA8;
+    --sky-light: #E3EDF8;
+    --white: #FFFFFF;
+    --border: #E8E2DA;
+  }
+
+  body {
+    background: #EDE7DE;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    padding: 40px 20px;
+  }
+
+  .phone-label {
+    text-align: center;
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    color: #9E9690;
+    margin-bottom: 16px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: var(--stone);
+    border-radius: 44px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8);
+    overflow: hidden;
+  }
+
+  .status-bar {
+    height: 50px;
+    padding: 16px 28px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .status-time { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .status-icons { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink); }
+
+  /* Header */
+  .header {
+    padding: 12px 24px 20px;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .app-wordmark {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .app-wordmark span {
+    color: var(--gold);
+  }
+  .notif-btn {
+    width: 38px;
+    height: 38px;
+    background: var(--white);
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .notif-btn svg { width: 18px; height: 18px; color: var(--ink); }
+  .notif-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 7px;
+    height: 7px;
+    background: var(--gold);
+    border-radius: 50%;
+    border: 1.5px solid var(--stone);
+  }
+
+  /* Child summary card */
+  .child-card {
+    background: var(--ink);
+    border-radius: 24px;
+    padding: 22px 22px 20px;
+    margin: 0 24px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .child-card::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, rgba(194,123,43,0.25) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .child-card::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 30px;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(74,103,65,0.3) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .child-card-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .child-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #C27B2B 0%, #E8A94D 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: white;
+  }
+  .child-info {}
+  .child-name {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: white;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .child-school {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+  }
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+  }
+  .stat-item {}
+  .stat-num {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 500;
+    color: white;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+
+  /* Areas strip */
+  .areas-section {
+    padding: 0 24px 20px;
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .section-link {
+    font-size: 13px;
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .areas-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .areas-scroll::-webkit-scrollbar { display: none; }
+  .area-card {
+    flex-shrink: 0;
+    width: 90px;
+    padding: 14px 12px;
+    border-radius: 18px;
+    border: 1.5px solid transparent;
+    text-align: center;
+    cursor: pointer;
+  }
+  .area-card.active-area {
+    background: var(--gold-faint);
+    border-color: var(--gold-light);
+  }
+  .area-card.medium-area {
+    background: var(--sage-faint);
+    border-color: #D0DFCB;
+  }
+  .area-card.quiet-area {
+    background: var(--white);
+    border-color: var(--border);
+  }
+  .area-icon {
+    font-size: 22px;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .area-name {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .area-card.active-area .area-name { color: var(--gold); }
+  .area-card.medium-area .area-name { color: var(--sage); }
+  .area-card.quiet-area .area-name { color: var(--ink-muted); }
+  .area-count {
+    font-size: 10px;
+    margin-top: 3px;
+  }
+  .area-card.active-area .area-count { color: rgba(194,123,43,0.6); }
+  .area-card.medium-area .area-count { color: rgba(74,103,65,0.6); }
+  .area-card.quiet-area .area-count { color: var(--ink-muted); }
+
+  /* Feed */
+  .feed-section {
+    padding: 0 24px 24px;
+  }
+
+  .feed-item {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 18px 18px 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .feed-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .feed-source {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .source-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .source-dot.school { background: var(--gold); }
+  .source-dot.outside { background: var(--sage); }
+  .source-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .source-dot.school + .source-label { color: var(--gold); }
+  .source-dot.outside + .source-label { color: var(--sage); }
+  .feed-date {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  .feed-text {
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .feed-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .feed-tag {
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .feed-tag.gold-tag {
+    background: var(--gold-faint);
+    color: var(--gold);
+  }
+  .feed-tag.sage-tag {
+    background: var(--sage-faint);
+    color: var(--sage);
+  }
+  .feed-tag.sky-tag {
+    background: var(--sky-light);
+    color: var(--sky);
+  }
+
+  /* Add outside achievement */
+  .add-outside {
+    margin: 0 24px 24px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1.5px dashed var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .add-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--sage-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .add-icon svg { width: 16px; height: 16px; color: var(--sage); }
+  .add-text { flex: 1; }
+  .add-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .add-sub {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 2px;
+  }
+
+</style>
+</head>
+<body>
+
+<div>
+  <div class="phone-label">Parent — Child's Feed</div>
+  <div class="phone">
+
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+    </div>
+
+    <div class="header">
+      <div class="header-top">
+        <div class="app-wordmark">cairn<span>.</span></div>
+        <div class="notif-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <div class="notif-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="child-card">
+      <div class="child-card-top">
+        <div class="child-avatar">C</div>
+        <div class="child-info">
+          <div class="child-name">Callum Reid</div>
+          <div class="child-school">Hawick Primary · P5</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-num">24</div>
+          <div class="stat-label">Achievements this term</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">6</div>
+          <div class="stat-label">Curriculum areas active</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">3</div>
+          <div class="stat-label">Added outside school</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="areas-section">
+      <div class="section-header">
+        <span class="section-title">Areas of learning</span>
+        <span class="section-link">All areas</span>
+      </div>
+      <div class="areas-scroll">
+        <div class="area-card active-area">
+          <span class="area-icon">📖</span>
+          <div class="area-name">Literacy</div>
+          <div class="area-count">9 this term</div>
+        </div>
+        <div class="area-card medium-area">
+          <span class="area-icon">🌿</span>
+          <div class="area-name">Health & Wellbeing</div>
+          <div class="area-count">6 this term</div>
+        </div>
+        <div class="area-card medium-area">
+          <span class="area-icon">🔬</span>
+          <div class="area-name">Sciences</div>
+          <div class="area-count">5 this term</div>
+        </div>
+        <div class="area-card quiet-area">
+          <span class="area-icon">🔢</span>
+          <div class="area-name">Numeracy</div>
+          <div class="area-count">2 this term</div>
+        </div>
+        <div class="area-card quiet-area">
+          <span class="area-icon">🎨</span>
+          <div class="area-name">Expressive Arts</div>
+          <div class="area-count">2 this term</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feed-section">
+      <div class="section-header">
+        <span class="section-title">Recent achievements</span>
+        <span class="section-link">See all</span>
+      </div>
+
+      <div class="feed-item">
+        <div class="feed-item-header">
+          <div class="feed-source">
+            <div class="source-dot school"></div>
+            <span class="source-label">In school</span>
+          </div>
+          <span class="feed-date">Today</span>
+        </div>
+        <div class="feed-text">Gave a confident presentation to the class about his science project on renewable energy. Handled questions well from peers.</div>
+        <div class="feed-tags">
+          <span class="feed-tag gold-tag">Literacy</span>
+          <span class="feed-tag sky-tag">Sciences</span>
+        </div>
+      </div>
+
+      <div class="feed-item">
+        <div class="feed-item-header">
+          <div class="feed-source">
+            <div class="source-dot outside"></div>
+            <span class="source-label">Outside school</span>
+          </div>
+          <span class="feed-date">Mon 3 Mar</span>
+        </div>
+        <div class="feed-text">Completed his Grade 2 football coaching badge. Showed great leadership with younger players in his group.</div>
+        <div class="feed-tags">
+          <span class="feed-tag sage-tag">Health & Wellbeing</span>
+          <span class="feed-tag sage-tag">Leadership</span>
+        </div>
+      </div>
+
+      <div class="feed-item">
+        <div class="feed-item-header">
+          <div class="feed-source">
+            <div class="source-dot school"></div>
+            <span class="source-label">In school</span>
+          </div>
+          <span class="feed-date">Fri 28 Feb</span>
+        </div>
+        <div class="feed-text">Completed a sustained piece of creative writing, developing character and setting across multiple paragraphs with real detail.</div>
+        <div class="feed-tags">
+          <span class="feed-tag gold-tag">Literacy</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="add-outside">
+      <div class="add-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </div>
+      <div class="add-text">
+        <div class="add-title">Add an outside achievement</div>
+        <div class="add-sub">Sport, music, volunteering — anything counts</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
