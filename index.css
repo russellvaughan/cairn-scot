@@ -100,11 +100,13 @@ body {
   margin: 0 auto;
   position: relative;
   background: transparent;
+  overflow-x: clip;
 }
 
 .page-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
@@ -242,6 +244,7 @@ h1, h2, h3 {
   font-size: 16px;
   color: var(--color-ink);
   width: 100%;
+  max-width: 100%;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   resize: none;
@@ -251,6 +254,11 @@ h1, h2, h3 {
   box-shadow: 0 0 0 3px rgba(227,106,44,0.16);
 }
 .field::placeholder { color: var(--color-ink-muted); }
+
+textarea.field {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 
 /* ---- Section headers ---- */
 .section-header {

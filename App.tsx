@@ -47,6 +47,8 @@ function FullShell({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const [role, setRole] = useState<UserRole | null>(null)
+  const hasMagicLinkHash =
+    typeof window !== 'undefined' && window.location.hash.includes('access_token')
 
   return (
     <BrowserRouter>
@@ -55,7 +57,9 @@ export default function App() {
         <Route path="/" element={
           role
             ? <Navigate to={role === 'teacher' ? '/teacher' : role === 'parent' ? '/parent' : '/student'} replace />
-            : <FullShell><SignIn onRoleSelect={setRole} /></FullShell>
+            : hasMagicLinkHash
+              ? <FullShell><AuthCallback onRoleResolved={setRole} /></FullShell>
+              : <FullShell><SignIn onRoleSelect={setRole} /></FullShell>
         } />
         <Route path="/home" element={<FullShell><SignIn onRoleSelect={setRole} /></FullShell>} />
         <Route path="/auth/callback" element={<FullShell><AuthCallback onRoleResolved={setRole} /></FullShell>} />
