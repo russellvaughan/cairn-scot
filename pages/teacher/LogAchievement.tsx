@@ -127,10 +127,27 @@ export default function LogAchievement() {
     setTimeout(() => navigate('/teacher'), 1400)
   }
 
-  const canSave = description.length >= 10 && (
-    (AI_ENABLED && aiShown && selectedEO) ||
-    (!AI_ENABLED && manualArea && selectedEO)
-  )
+  const hasAiMapping = AI_ENABLED && aiShown && !!selectedEO
+  const hasManualMapping = !!manualArea && !!selectedEO
+  const canSave = description.length >= 10 && (hasAiMapping || hasManualMapping)
+  const showManualSelector = description.length >= 10 && (!AI_ENABLED || !aiShown || !!manualArea)
+
+  let saveHint = ''
+  if (description.length < 10) {
+    saveHint = `Add ${10 - description.length} more character${10 - description.length === 1 ? '' : 's'} to enable Save.`
+  } else if (canSave) {
+    saveHint = 'Ready to save.'
+  } else if (aiLoading) {
+    saveHint = 'AI is analysing. You can also map manually below.'
+  } else if (AI_ENABLED && !aiShown && description.length < 20) {
+    saveHint = 'AI suggestions appear at 20+ characters. You can map manually below now.'
+  } else if (manualArea && !selectedEO) {
+    saveHint = 'Select an Experience & Outcome to enable Save.'
+  } else if (!manualArea && !aiShown) {
+    saveHint = 'Choose a curriculum area and outcome to enable Save.'
+  } else {
+    saveHint = 'Select a suggestion to enable Save.'
+  }
 
   if (saved) {
     return (
@@ -217,7 +234,15 @@ export default function LogAchievement() {
           <textarea
             ref={textareaRef}
             className="field"
-            style={{ border: 'none', padding: 0, boxShadow: 'none', minHeight: 56, resize: 'none' }}
+            style={{
+              border: 'none',
+              padding: '2px 2px 0',
+              margin: 0,
+              lineHeight: 1.45,
+              boxShadow: 'none',
+              minHeight: 56,
+              resize: 'none',
+            }}
             placeholder="Describe what the pupil did…"
             value={description}
             onChange={e => setDescription(e.target.value)}
@@ -371,9 +396,21 @@ export default function LogAchievement() {
           </div>
         )}
 
-        {/* Manual selection (non-AI mode) */}
-        {!AI_ENABLED && description.length >= 10 && (
+        {/* Manual selection (AI fallback / non-AI mode) */}
+        {showManualSelector && (
           <div className="animate-slide-up" style={{ marginBottom: 20 }}>
+            {AI_ENABLED && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: 'var(--color-ink-soft)',
+                  marginBottom: 10,
+                  lineHeight: 1.45,
+                }}
+              >
+                {aiShown ? 'Prefer manual mapping? Select area and outcome below.' : 'AI suggestion not ready yet. Use manual mapping now.'}
+              </div>
+            )}
             <div className="label-xs" style={{ marginBottom: 10 }}>Curriculum area</div>
             <div className="scroll-row" style={{ marginBottom: 16 }}>
               {MANUAL_AREAS.map(area => (
@@ -420,6 +457,16 @@ export default function LogAchievement() {
 
       {/* Save button */}
       <div style={{ padding: '8px 24px 32px' }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: canSave ? 'var(--color-sage)' : 'var(--color-ink-soft)',
+            marginBottom: 10,
+            textAlign: 'center',
+          }}
+        >
+          {saveHint}
+        </div>
         <button className="btn btn-primary" onClick={handleSave} disabled={!canSave}
           style={{ opacity: canSave ? 1 : 0.4 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>

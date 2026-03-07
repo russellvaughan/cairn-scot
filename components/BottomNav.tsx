@@ -9,17 +9,25 @@ const teacherTabs = [
   { path: '/teacher',         label: 'Class',   icon: HomeIcon },
   { path: '/teacher/log',     label: 'Log',     icon: PlusIcon },
   { path: '/teacher/pending', label: 'Reviews', icon: InboxIcon, badge: true },
+  { path: '/home',            label: 'Home',    icon: GridIcon },
 ]
 
 const parentTabs = [
   { path: '/parent',             label: 'Feed', icon: HomeIcon },
   { path: '/parent/add-outside', label: 'Add',  icon: PlusIcon },
+  { path: '/home',               label: 'Home', icon: GridIcon },
+]
+
+const studentTabs = [
+  { path: '/student',                 label: 'Feed', icon: HomeIcon },
+  { path: '/student/add-achievement', label: 'Add',  icon: PlusIcon },
+  { path: '/home',                    label: 'Home', icon: GridIcon },
 ]
 
 export default function BottomNav({ role }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
-  const tabs = role === 'teacher' ? teacherTabs : parentTabs
+  const tabs = role === 'teacher' ? teacherTabs : role === 'parent' ? parentTabs : studentTabs
 
   return (
     <nav style={{
@@ -29,59 +37,67 @@ export default function BottomNav({ role }: Props) {
       transform: 'translateX(-50%)',
       width: '100%',
       maxWidth: 480,
-      background: 'rgba(238,244,255,0.96)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-      borderTop: '1px solid var(--color-border)',
-      boxShadow: '0 -8px 20px rgba(16,42,67,0.08)',
-      paddingTop: 10,
-      paddingBottom: `calc(10px + env(safe-area-inset-bottom))`,
-      display: 'flex',
-      justifyContent: 'space-around',
       zIndex: 100,
+      padding: '0 10px 8px',
     }}>
-      {tabs.map(tab => {
-        const active = location.pathname === tab.path ||
-          (tab.path !== '/teacher' && tab.path !== '/parent' && location.pathname.startsWith(tab.path))
-        const Icon = tab.icon
-        return (
-          <button
-            key={tab.path}
-            onClick={() => navigate(tab.path)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 3,
-              background: active ? 'rgba(31,111,229,0.14)' : 'transparent',
-              border: 'none',
-              borderRadius: 14,
-              cursor: 'pointer',
-              padding: '6px 14px',
-              position: 'relative',
-              transition: 'all 0.15s',
-            }}
-          >
-            <div style={{ position: 'relative' }}>
-              <Icon color={active ? 'var(--color-sky)' : 'var(--color-ink-muted)'} />
-              {(tab as any).badge && (
-                <span style={{
-                  position: 'absolute', top: -2, right: -2,
-                  width: 7, height: 7,
-                  background: 'var(--color-gold)',
-                  borderRadius: '50%',
-                  border: '1.5px solid var(--color-stone)',
-                }} />
-              )}
-            </div>
-            <span style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: active ? 'var(--color-sky)' : 'var(--color-ink-muted)',
-            }}>{tab.label}</span>
-          </button>
-        )
-      })}
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.88)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid #C5D6EE',
+          boxShadow: '0 10px 24px rgba(16,42,67,0.14)',
+          borderRadius: 18,
+          paddingTop: 8,
+          paddingBottom: `calc(8px + env(safe-area-inset-bottom))`,
+          display: 'flex',
+          justifyContent: 'space-around',
+        }}
+      >
+        {tabs.map(tab => {
+          const active = tab.path === `/${role}`
+            ? location.pathname === tab.path
+            : location.pathname.startsWith(tab.path)
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.path}
+              onClick={() => navigate(tab.path)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 3,
+                background: active ? 'rgba(31,111,229,0.14)' : 'transparent',
+                border: 'none',
+                borderRadius: 14,
+                cursor: 'pointer',
+                padding: '6px 14px',
+                position: 'relative',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div style={{ position: 'relative' }}>
+                <Icon color={active ? 'var(--color-sky)' : 'var(--color-ink-muted)'} />
+                {(tab as any).badge && (
+                  <span style={{
+                    position: 'absolute', top: -2, right: -2,
+                    width: 7, height: 7,
+                    background: 'var(--color-gold)',
+                    borderRadius: '50%',
+                    border: '1.5px solid var(--color-stone)',
+                  }} />
+                )}
+              </div>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: active ? 'var(--color-sky)' : 'var(--color-ink-muted)',
+              }}>{tab.label}</span>
+            </button>
+          )
+        })}
+      </div>
     </nav>
   )
 }
@@ -109,6 +125,17 @@ function PlusIcon({ color }: { color: string }) {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="5" x2="12" y2="19"/>
       <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  )
+}
+
+function GridIcon({ color }: { color: string }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
     </svg>
   )
 }

@@ -11,6 +11,7 @@ import PendingReviews from './pages/teacher/PendingReviews'
 import ChildFeed from './pages/parent/ChildFeed'
 import AddOutside from './pages/parent/AddOutside'
 import StudentDemo from './pages/student/StudentDemo'
+import AddAchievement from './pages/student/AddAchievement'
 import BottomNav from './components/BottomNav'
 
 function TeacherShell({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,15 @@ function ParentShell({ children }: { children: React.ReactNode }) {
   )
 }
 
+function StudentShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="app-shell">
+      <div className="page-content">{children}</div>
+      <BottomNav role="student" />
+    </div>
+  )
+}
+
 function FullShell({ children }: { children: React.ReactNode }) {
   return <div className="app-shell"><div className="page-content no-bottom-nav">{children}</div></div>
 }
@@ -47,6 +57,7 @@ export default function App() {
             ? <Navigate to={role === 'teacher' ? '/teacher' : role === 'parent' ? '/parent' : '/student'} replace />
             : <FullShell><SignIn onRoleSelect={setRole} /></FullShell>
         } />
+        <Route path="/home" element={<FullShell><SignIn onRoleSelect={setRole} /></FullShell>} />
         <Route path="/auth/callback" element={<FullShell><AuthCallback onRoleResolved={setRole} /></FullShell>} />
 
         {/* Teacher routes */}
@@ -71,9 +82,12 @@ export default function App() {
           <ParentShell><AddOutside /></ParentShell>
         } />
 
-        {/* Student demo route */}
+        {/* Student routes */}
         <Route path="/student" element={
-          <FullShell><StudentDemo /></FullShell>
+          <StudentShell><StudentDemo /></StudentShell>
+        } />
+        <Route path="/student/add-achievement" element={
+          <StudentShell><AddAchievement /></StudentShell>
         } />
 
         {/* Fallback */}

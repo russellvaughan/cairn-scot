@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom'
 import { getPupilById, getPupilAchievements, CURRICULUM_AREA_LABELS, formatDate } from '../../data/mock'
 
 const PUPIL_ID = 'p1'
 
 export default function StudentDemo() {
+  const navigate = useNavigate()
   const pupil = getPupilById(PUPIL_ID)
   const achievements = getPupilAchievements(PUPIL_ID)
     .sort((a, b) => b.achievementDate.localeCompare(a.achievementDate))
@@ -37,6 +39,14 @@ export default function StudentDemo() {
           A clean, student-friendly view of recent achievements and progress moments.
         </div>
       </div>
+
+      <button className="btn btn-primary" style={{ marginBottom: 18 }} onClick={() => navigate('/student/add-achievement')}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Log achievement
+      </button>
 
       <div className="section-header">
         <span className="section-title">Recent achievements</span>
