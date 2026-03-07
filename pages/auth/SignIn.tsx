@@ -11,15 +11,65 @@ export default function SignIn({ onRoleSelect }: Props) {
   const [step, setStep] = useState<'role' | 'email' | 'sent'>('role')
   const [email, setEmail] = useState('')
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null)
+  const [sending, setSending] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role)
+    setErrorMessage(null)
     setStep('email')
   }
 
-  const handleSubmit = () => {
-    if (!email || !selectedRole) return
-    setStep('sent')
+  const handleSubmit = async () => {
+    if (!email || !selectedRole || sending) return
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
+    const supabaseKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined
+
+    if (!supabaseUrl || !supabaseKey) {
+      setErrorMessage('Missing Supabase env vars. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (or VITE_SUPABASE_ANON_KEY).')
+      return
+    }
+
+    const normalizedEmail = email.trim().toLowerCase()
+    const endpoint = `${supabaseUrl.replace(/\/+$/, '')}/auth/v1/otp`
+
+    setSending(true)
+    setErrorMessage(null)
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          create_user: true,
+          email_redirect_to: window.location.origin,
+          data: { role: selectedRole },
+        }),
+      })
+
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        const message =
+          payload?.msg ||
+          payload?.error_description ||
+          payload?.error ||
+          'Could not send sign-in link. Please check your Supabase auth settings.'
+        throw new Error(message)
+      }
+
+      setEmail(normalizedEmail)
+      setStep('sent')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not send sign-in link.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const handleDemo = (role: UserRole) => {
@@ -159,8 +209,22 @@ export default function SignIn({ onRoleSelect }: Props) {
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               />
             </div>
-            <button className="btn btn-primary" onClick={handleSubmit} disabled={!email}>
-              Send sign-in link
+            {errorMessage && (
+              <div style={{
+                marginBottom: 16,
+                padding: 12,
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-red-faint)',
+                border: '1px solid rgba(192,57,43,0.2)',
+                color: 'var(--color-red-soft)',
+                fontSize: 13,
+                lineHeight: 1.45,
+              }}>
+                {errorMessage}
+              </div>
+            )}
+            <button className="btn btn-primary" onClick={handleSubmit} disabled={!email || sending}>
+              {sending ? 'Sending...' : 'Send sign-in link'}
             </button>
             <div style={{ marginTop: 24, padding: 16, background: 'var(--color-gold-faint)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-gold-light)' }}>
               <div style={{ fontSize: 12, color: 'var(--color-gold)', fontWeight: 600, marginBottom: 4 }}>Your data is protected</div>
