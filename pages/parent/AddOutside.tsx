@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PARENT_CATEGORIES } from '../../data/mock'
 
@@ -6,9 +6,38 @@ export default function AddOutside() {
   const navigate = useNavigate()
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<File[]>([])
   const [submitted, setSubmitted] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const canSubmit = description.length >= 10 && category !== null
+
+  const handleFilesSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(event.target.files || [])
+      .filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'))
+
+    if (!incoming.length) return
+
+    setAttachments(prev => {
+      const merged = [...prev]
+      incoming.forEach(file => {
+        const exists = merged.some(
+          existing =>
+            existing.name === file.name &&
+            existing.size === file.size &&
+            existing.lastModified === file.lastModified
+        )
+        if (!exists) merged.push(file)
+      })
+      return merged.slice(0, 6)
+    })
+
+    event.target.value = ''
+  }
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, idx) => idx !== index))
+  }
 
   const handleSubmit = () => {
     if (!canSubmit) return
@@ -28,6 +57,11 @@ export default function AddOutside() {
         <div className="card" style={{ padding: '16px', textAlign: 'left', marginBottom: 24 }}>
           <div style={{ fontSize: 12, color: 'var(--color-ink-muted)', marginBottom: 6 }}>What you submitted</div>
           <div style={{ fontSize: 14, color: 'var(--color-ink)', lineHeight: 1.6 }}>{description}</div>
+          {attachments.length > 0 && (
+            <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-ink-soft)' }}>
+              Attachments selected: {attachments.length}
+            </div>
+          )}
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/parent')}>
           Back to feed
@@ -65,6 +99,85 @@ export default function AddOutside() {
           rows={4}
           style={{ marginBottom: 24 }}
         />
+
+        <div className="label-xs" style={{ marginBottom: 10 }}>Add photo or video (optional)</div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          onChange={handleFilesSelected}
+          style={{ display: 'none' }}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            width: '100%',
+            background: 'var(--color-white)',
+            border: '1.5px dashed var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            padding: '13px 14px',
+            marginBottom: attachments.length > 0 ? 10 : 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            cursor: 'pointer',
+            color: 'var(--color-ink-soft)',
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Select attachments
+        </button>
+
+        {attachments.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+            {attachments.map((file, index) => (
+              <div
+                key={`${file.name}-${file.size}-${file.lastModified}`}
+                style={{
+                  background: 'var(--color-white)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1 }}>
+                  {file.type.startsWith('video/') ? '🎬' : '📷'}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: 'var(--color-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {file.name}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--color-ink-muted)' }}>
+                    {file.type.startsWith('video/') ? 'Video' : 'Photo'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeAttachment(index)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--color-ink-muted)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Category */}
         <div className="label-xs" style={{ marginBottom: 12 }}>What kind of achievement is this?</div>

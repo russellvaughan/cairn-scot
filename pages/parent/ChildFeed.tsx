@@ -57,21 +57,22 @@ export default function ChildFeed() {
       {/* Child summary card */}
       <div style={{
         margin: '0 24px 24px',
-        background: 'var(--color-ink)',
+        background: 'linear-gradient(165deg, #FFFFFF 0%, #F4F8F2 100%)',
+        border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-xl)',
         padding: '22px 22px 20px',
         position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ position: 'absolute', top: -50, right: -40, width: 160, height: 160, background: 'radial-gradient(circle, rgba(194,123,43,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: -20, left: 20, width: 100, height: 100, background: 'radial-gradient(circle, rgba(74,103,65,0.25) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', top: -50, right: -40, width: 160, height: 160, background: 'radial-gradient(circle, rgba(194,123,43,0.14) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', bottom: -20, left: 20, width: 100, height: 100, background: 'radial-gradient(circle, rgba(74,103,65,0.18) 0%, transparent 70%)', borderRadius: '50%' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
             <div className={`avatar avatar-lg ${pupil.avatarColor}`}>{pupil.firstName[0]}</div>
             <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500, color: 'white', letterSpacing: '-0.01em' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 500, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
                 {pupil.firstName} {pupil.lastName}
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+              <div style={{ fontSize: 13, color: 'var(--color-ink-soft)', marginTop: 2 }}>
                 Hawick Primary · {pupil.yearGroup}
               </div>
             </div>
@@ -83,8 +84,8 @@ export default function ChildFeed() {
               { num: outsideCount,        label: 'Outside\nschool' },
             ].map((s, i) => (
               <div key={i}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 500, color: 'white', letterSpacing: '-0.02em', lineHeight: 1 }}>{s.num}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4, lineHeight: 1.4, whiteSpace: 'pre-line' }}>{s.label}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 500, color: 'var(--color-ink)', letterSpacing: '-0.02em', lineHeight: 1 }}>{s.num}</div>
+                <div style={{ fontSize: 11, color: 'var(--color-ink-muted)', marginTop: 4, lineHeight: 1.4, whiteSpace: 'pre-line' }}>{s.label}</div>
               </div>
             ))}
           </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { mockPupils, CURRICULUM_AREA_LABELS, LEVEL_LABELS, mockAiSuggestions } from '../../data/mock'
 import type { Pupil, CurriculumArea, CfELevel } from '../../types'
@@ -70,9 +70,11 @@ export default function LogAchievement() {
   const [aiShown, setAiShown] = useState(false)
   const [selectedEO, setSelectedEO] = useState<string | null>(null)
   const [manualArea, setManualArea] = useState<CurriculumArea | null>(null)
+  const [attachments, setAttachments] = useState<File[]>([])
   const [saved, setSaved] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const attachmentInputRef = useRef<HTMLInputElement>(null)
 
   const aiData = mockAiSuggestions.default
 
@@ -92,6 +94,33 @@ export default function LogAchievement() {
     }, 800)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [description])
+
+  const handleAttachmentSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(event.target.files || [])
+      .filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'))
+
+    if (!incoming.length) return
+
+    setAttachments(prev => {
+      const merged = [...prev]
+      incoming.forEach(file => {
+        const exists = merged.some(
+          existing =>
+            existing.name === file.name &&
+            existing.size === file.size &&
+            existing.lastModified === file.lastModified
+        )
+        if (!exists) merged.push(file)
+      })
+      return merged.slice(0, 6)
+    })
+
+    event.target.value = ''
+  }
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, idx) => idx !== index))
+  }
 
   const handleSave = () => {
     setSaved(true)
@@ -180,7 +209,7 @@ export default function LogAchievement() {
           background: 'var(--color-white)',
           border: `1.5px solid ${description.length > 0 ? 'var(--color-gold)' : 'var(--color-border)'}`,
           borderRadius: 'var(--radius-lg)',
-          padding: '16px 18px',
+          padding: '12px 14px',
           marginBottom: 16,
           boxShadow: description.length > 0 ? '0 0 0 3px rgba(194,123,43,0.08)' : 'none',
           transition: 'border-color 0.2s, box-shadow 0.2s',
@@ -188,27 +217,79 @@ export default function LogAchievement() {
           <textarea
             ref={textareaRef}
             className="field"
-            style={{ border: 'none', padding: 0, boxShadow: 'none', minHeight: 80, resize: 'none' }}
+            style={{ border: 'none', padding: 0, boxShadow: 'none', minHeight: 56, resize: 'none' }}
             placeholder="Describe what the pupil did…"
             value={description}
             onChange={e => setDescription(e.target.value)}
-            rows={3}
+            rows={2}
           />
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)',
+            marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)',
           }}>
-            <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-ink-soft)', fontWeight: 500 }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-muted)" strokeWidth="2" strokeLinecap="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+            <input
+              ref={attachmentInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              onChange={handleAttachmentSelect}
+              style={{ display: 'none' }}
+            />
+            <button
+              onClick={() => attachmentInputRef.current?.click()}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--color-ink-soft)', fontWeight: 500 }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-muted)" strokeWidth="2.2" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Voice note
+              Add photo/video
             </button>
             <span style={{ fontSize: 12, color: 'var(--color-ink-muted)' }}>{description.length} chars</span>
           </div>
         </div>
+
+        {attachments.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            {attachments.map((file, index) => (
+              <div
+                key={`${file.name}-${file.size}-${file.lastModified}`}
+                style={{
+                  background: 'var(--color-white)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1 }}>{file.type.startsWith('video/') ? '🎬' : '📷'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: 'var(--color-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {file.name}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--color-ink-muted)' }}>
+                    {file.type.startsWith('video/') ? 'Video' : 'Photo'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeAttachment(index)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--color-ink-muted)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* AI loading state */}
         {AI_ENABLED && aiLoading && (
