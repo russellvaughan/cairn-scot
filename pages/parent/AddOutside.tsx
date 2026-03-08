@@ -1,6 +1,17 @@
 import { useState, useRef, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PARENT_CATEGORIES } from '../../data/mock'
+import { fetchAuthUser, getStoredAccessToken, supabaseInsert, supabaseSelect } from '../../lib/supabase'
+
+type DbPupilJoin = {
+  id: string
+  school_id: string | null
+}
+
+type DbParentLinkRow = {
+  pupil_id: string
+  pupils: DbPupilJoin | DbPupilJoin[] | null
+}
 
 export default function AddOutside() {
   const navigate = useNavigate()
@@ -8,9 +19,11 @@ export default function AddOutside() {
   const [category, setCategory] = useState<string | null>(null)
   const [attachments, setAttachments] = useState<File[]>([])
   const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const canSubmit = description.length >= 10 && category !== null
+  const canSubmit = description.length >= 10 && category !== null && !saving
 
   const handleFilesSelected = (event: ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(event.target.files || [])
@@ -39,9 +52,64 @@ export default function AddOutside() {
     setAttachments(prev => prev.filter((_, idx) => idx !== index))
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return
-    setSubmitted(true)
+    setSaving(true)
+    setErrorMessage(null)
+
+    try {
+      const token = getStoredAccessToken()
+      if (!token) {
+        throw new Error('Please sign in to submit this achievement.')
+      }
+
+      const authUser = await fetchAuthUser(token)
+      if (!authUser?.id) {
+        throw new Error('Could not verify your account. Please sign in again.')
+      }
+
+      const links = await supabaseSelect<DbParentLinkRow[]>(
+        'parent_pupil_links',
+        {
+          select: 'pupil_id,pupils!inner(id,school_id)',
+          parent_id: `eq.${authUser.id}`,
+          verified: 'eq.true',
+          order: 'linked_at.asc',
+          limit: '1',
+        },
+        token
+      )
+
+      const primaryLink = links[0]
+      const linkedPupil = primaryLink
+        ? (Array.isArray(primaryLink.pupils) ? primaryLink.pupils[0] : primaryLink.pupils)
+        : null
+
+      if (!primaryLink?.pupil_id || !linkedPupil?.school_id) {
+        throw new Error('No verified child link found for this parent account yet.')
+      }
+
+      await supabaseInsert(
+        'achievements',
+        {
+          pupil_id: primaryLink.pupil_id,
+          school_id: linkedPupil.school_id,
+          submitted_by: authUser.id,
+          source: 'outside_school',
+          description: description.trim(),
+          parent_category: category,
+          status: 'pending_review',
+          ai_suggested: false,
+        },
+        token
+      )
+
+      setSubmitted(true)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not submit achievement.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (submitted) {
@@ -219,8 +287,25 @@ export default function AddOutside() {
           </div>
         </div>
 
+        {errorMessage && (
+          <div
+            style={{
+              marginBottom: 14,
+              padding: 12,
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-red-faint)',
+              border: '1px solid rgba(184,51,51,0.25)',
+              color: 'var(--color-red-soft)',
+              fontSize: 13,
+              lineHeight: 1.45,
+            }}
+          >
+            {errorMessage}
+          </div>
+        )}
+
         <button className="btn btn-primary" onClick={handleSubmit} disabled={!canSubmit} style={{ opacity: canSubmit ? 1 : 0.4 }}>
-          Submit for teacher review
+          {saving ? 'Submitting...' : 'Submit for teacher review'}
         </button>
       </div>
     </div>

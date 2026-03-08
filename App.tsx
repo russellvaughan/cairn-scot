@@ -8,6 +8,7 @@ import ClassOverview from './pages/teacher/ClassOverview'
 import LogAchievement from './pages/teacher/LogAchievement'
 import PupilDetail from './pages/teacher/PupilDetail'
 import PendingReviews from './pages/teacher/PendingReviews'
+import AddPupil from './pages/teacher/AddPupil'
 import ChildFeed from './pages/parent/ChildFeed'
 import AddOutside from './pages/parent/AddOutside'
 import StudentDemo from './pages/student/StudentDemo'
@@ -46,7 +47,11 @@ function FullShell({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const [role, setRole] = useState<UserRole | null>(null)
+  const [role, setRole] = useState<UserRole | null>(() => {
+    if (typeof window === 'undefined') return null
+    const stored = localStorage.getItem('cairn_last_role')
+    return stored === 'teacher' || stored === 'parent' || stored === 'student' ? stored : null
+  })
   const hasMagicLinkHash =
     typeof window !== 'undefined' && window.location.hash.includes('access_token')
 
@@ -76,6 +81,9 @@ export default function App() {
         } />
         <Route path="/teacher/pending" element={
           <TeacherShell><PendingReviews /></TeacherShell>
+        } />
+        <Route path="/teacher/pupils/new" element={
+          <TeacherShell><AddPupil /></TeacherShell>
         } />
 
         {/* Parent routes */}

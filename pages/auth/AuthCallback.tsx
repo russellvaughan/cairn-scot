@@ -1,7 +1,14 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { UserRole } from '../../types'
-import { fetchAuthUser, getStoredAccessToken, setStoredSession, setStoredUserId } from '../../lib/supabase'
+import {
+  fetchAuthUser,
+  getStoredAccessToken,
+  setStoredSession,
+  setStoredUserId,
+  supabaseSelect,
+  supabaseUpsert,
+} from '../../lib/supabase'
 
 interface Props {
   onRoleResolved: (role: UserRole) => void
@@ -15,6 +22,23 @@ const ROLE_ROUTES: Record<UserRole, string> = {
 
 const isUserRole = (value: string | null): value is UserRole =>
   value === 'teacher' || value === 'parent' || value === 'student'
+
+type DbUserRow = {
+  id: string
+  role: string
+  email: string
+  full_name: string
+}
+
+function guessFullName(email?: string): string {
+  const localPart = (email || '').split('@')[0] || 'Cairn User'
+  const cleaned = localPart.replace(/[._-]+/g, ' ').trim()
+  return cleaned
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ') || 'Cairn User'
+}
 
 export default function AuthCallback({ onRoleResolved }: Props) {
   const navigate = useNavigate()
@@ -38,16 +62,64 @@ export default function AuthCallback({ onRoleResolved }: Props) {
       const authUser = await fetchAuthUser(accessToken)
       if (authUser?.id) {
         setStoredUserId(authUser.id)
-        roleFromProfile = (authUser.user_metadata?.role as string | null) ?? (authUser.app_metadata?.role as string | null) ?? null
+        roleFromProfile =
+          (authUser.user_metadata?.role as string | null) ??
+          (authUser.app_metadata?.role as string | null) ??
+          null
       }
 
-      const resolvedRoleCandidate =
+      const preferredRole =
         (isUserRole(roleFromProfile) ? roleFromProfile : null) ||
         (isUserRole(roleFromQuery) ? roleFromQuery : null) ||
         (isUserRole(roleFromStorage) ? roleFromStorage : null) ||
         'teacher'
 
-      const resolvedRole: UserRole = resolvedRoleCandidate
+      let resolvedRole: UserRole = preferredRole
+
+      if (authUser?.id && accessToken) {
+        try {
+          const existing = await supabaseSelect<DbUserRow[]>(
+            'users',
+            {
+              select: 'id,role,email,full_name',
+              id: `eq.${authUser.id}`,
+              limit: '1',
+            },
+            accessToken
+          )
+
+          const profile = existing[0]
+          if (profile) {
+            if (isUserRole(profile.role)) resolvedRole = profile.role
+          } else {
+            const email = authUser.email || ''
+            const metadataName = authUser.user_metadata?.full_name
+            const fullName =
+              typeof metadataName === 'string' && metadataName.trim().length > 0
+                ? metadataName.trim()
+                : guessFullName(email)
+
+            const inserted = await supabaseUpsert<DbUserRow[]>(
+              'users',
+              {
+                id: authUser.id,
+                email: email || `${authUser.id}@example.local`,
+                full_name: fullName,
+                role: preferredRole,
+              },
+              'id',
+              accessToken
+            )
+
+            if (inserted[0] && isUserRole(inserted[0].role)) {
+              resolvedRole = inserted[0].role
+            }
+          }
+        } catch {
+          // Keep auth flow resilient: route by preferred role even if profile bootstrap fails.
+        }
+      }
+
       localStorage.setItem('cairn_last_role', resolvedRole)
       onRoleResolved(resolvedRole)
 

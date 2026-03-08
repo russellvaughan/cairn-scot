@@ -151,17 +151,25 @@ For MVP, Option A is recommended. It keeps everything in one repo and one deploy
 
 ---
 
-## Step 9: Add the Anthropic API key
+## Step 9: Add backend environment variables (AI + database)
 
 1. Go to [console.anthropic.com](https://console.anthropic.com)
 2. Create an API key
-3. Add it as an environment variable in Vercel:
+3. In Vercel, go to your project → **Settings → Environment Variables**
+4. Add these server-side variables:
 
 ```
+SUPABASE_URL = https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY = your-service-role-key
 ANTHROPIC_API_KEY = sk-ant-...
+ANTHROPIC_MODEL_CHEAP = claude-3-5-haiku-latest
+ANTHROPIC_MODEL_QUALITY = claude-sonnet-4-20250514
 ```
 
-**Never commit this key to GitHub.** It should only ever live in environment variables.
+Notes:
+- `SUPABASE_SERVICE_ROLE_KEY` must never be exposed to the frontend.
+- `ANTHROPIC_MODEL_CHEAP` and `ANTHROPIC_MODEL_QUALITY` are optional; defaults are shown above.
+- Keep all secrets in Vercel env vars only, never in git.
 
 ---
 
