@@ -14,6 +14,7 @@ export default function TeacherSetup() {
   const [saving, setSaving] = useState(false)
   const [schoolName, setSchoolName] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export default function TeacherSetup() {
           navigate('/home', { replace: true })
           return
         }
+        setSessionToken(token)
 
         const authUser = await fetchAuthUser(token)
         if (!authUser?.id) {
@@ -73,7 +75,7 @@ export default function TeacherSetup() {
     setErrorMessage(null)
 
     try {
-      const token = getStoredAccessToken()
+      const token = sessionToken || getStoredAccessToken()
       if (!token) {
         throw new Error('Please sign in again.')
       }
