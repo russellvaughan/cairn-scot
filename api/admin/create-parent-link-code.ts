@@ -2,7 +2,7 @@ import { createSignedToken, getInviteSigningSecret } from '../_shared/invite-tok
 import {
   getRequesterProfile,
   getSupabaseServerConfig,
-  json,
+  jsonResponse,
   normalizeText,
   parseBearerToken,
   supabaseAdminSelect,
@@ -24,7 +24,7 @@ type DbPupilRow = {
   school_id: string
 }
 
-function getPublicAppOrigin(req: any): string {
+function getPublicAppOrigin(req: Request): string {
   const configured =
     process.env.PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -36,43 +36,43 @@ function getPublicAppOrigin(req: any): string {
     return configured.startsWith('http') ? configured.replace(/\/+$/, '') : `https://${configured.replace(/\/+$/, '')}`
   }
 
-  const forwardedProto = String(req.headers?.['x-forwarded-proto'] || 'https')
-  const forwardedHost = String(req.headers?.['x-forwarded-host'] || req.headers?.host || '')
+  const forwardedProto = String(req.headers.get('x-forwarded-proto') || 'https')
+  const forwardedHost = String(req.headers.get('x-forwarded-host') || req.headers.get('host') || '')
   if (forwardedHost) return `${forwardedProto}://${forwardedHost}`
 
   return 'http://localhost:5173'
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: Request) {
   if (req.method !== 'POST') {
-    return json(res, 405, { error: 'Method not allowed' })
+    return jsonResponse(405, { error: 'Method not allowed' })
   }
 
   try {
     const { serviceRoleKey, supabaseUrl } = getSupabaseServerConfig()
     const accessToken = parseBearerToken(req)
     if (!accessToken) {
-      return json(res, 401, { error: 'Missing bearer token' })
+      return jsonResponse(401, { error: 'Missing bearer token' })
     }
 
     const requester = await getRequesterProfile(supabaseUrl, serviceRoleKey, accessToken)
     if (!requester) {
-      return json(res, 401, { error: 'Could not validate session' })
+      return jsonResponse(401, { error: 'Could not validate session' })
     }
 
     if (requester.role !== 'admin' && requester.role !== 'teacher') {
-      return json(res, 403, { error: 'Only staff can create parent links' })
+      return jsonResponse(403, { error: 'Only staff can create parent links' })
     }
 
     if (!requester.school_id) {
-      return json(res, 400, { error: 'Your profile is not linked to a school yet' })
+      return jsonResponse(400, { error: 'Your profile is not linked to a school yet' })
     }
 
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
+    const body = await req.json().catch(() => ({}))
     const pupilId = normalizeText(String(body.pupil_id || ''))
 
     if (!pupilId) {
-      return json(res, 400, { error: 'pupil_id is required' })
+      return jsonResponse(400, { error: 'pupil_id is required' })
     }
 
     const pupils = await supabaseAdminSelect<DbPupilRow[]>(
@@ -89,7 +89,7 @@ export default async function handler(req: any, res: any) {
 
     const pupil = pupils[0]
     if (!pupil) {
-      return json(res, 404, { error: 'Pupil not found in your school' })
+      return jsonResponse(404, { error: 'Pupil not found in your school' })
     }
 
     const now = Math.floor(Date.now() / 1000)
@@ -110,7 +110,7 @@ export default async function handler(req: any, res: any) {
     const linkUrl = `${appOrigin}/home?link_child=${encodeURIComponent(token)}`
     const qrImageUrl = `https://quickchart.io/qr?text=${encodeURIComponent(linkUrl)}&size=220&margin=2`
 
-    return json(res, 200, {
+    return jsonResponse(200, {
       link_url: linkUrl,
       token,
       qr_image_url: qrImageUrl,
@@ -124,6 +124,6 @@ export default async function handler(req: any, res: any) {
     })
   } catch (error) {
     console.error('create-parent-link-code failed', error)
-    return json(res, 500, { error: 'Could not create parent link' })
+    return jsonResponse(500, { error: 'Could not create parent link' })
   }
 }

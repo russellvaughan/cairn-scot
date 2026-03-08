@@ -1,7 +1,7 @@
 import {
   authUserFromToken,
   getSupabaseServerConfig,
-  json,
+  jsonResponse,
   normalizeText,
   parseBearerToken,
   supabaseAdminRequest,
@@ -31,29 +31,29 @@ function fallbackSchoolName(email?: string): string {
   return `${titled} School`
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: Request) {
   if (req.method !== 'POST') {
-    return json(res, 405, { error: 'Method not allowed' })
+    return jsonResponse(405, { error: 'Method not allowed' })
   }
 
   try {
     const { supabaseUrl, serviceRoleKey } = getSupabaseServerConfig()
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
+    const body = await req.json().catch(() => ({}))
     const userId = normalizeText(String(body.user_id || ''))
     const schoolNameInput = normalizeText(String(body.school_name || ''))
 
     if (!userId) {
-      return json(res, 400, { error: 'user_id is required' })
+      return jsonResponse(400, { error: 'user_id is required' })
     }
 
     const accessToken = parseBearerToken(req)
     if (!accessToken) {
-      return json(res, 401, { error: 'Missing bearer token' })
+      return jsonResponse(401, { error: 'Missing bearer token' })
     }
 
     const authUser = await authUserFromToken(supabaseUrl, serviceRoleKey, accessToken)
     if (!authUser?.id || authUser.id !== userId) {
-      return json(res, 403, { error: 'Unauthorized for requested user_id' })
+      return jsonResponse(403, { error: 'Unauthorized for requested user_id' })
     }
 
     const users = await supabaseAdminSelect<DbUserRow[]>(
@@ -69,15 +69,15 @@ export default async function handler(req: any, res: any) {
 
     const user = users[0]
     if (!user) {
-      return json(res, 404, { error: 'User profile not found in public.users' })
+      return jsonResponse(404, { error: 'User profile not found in public.users' })
     }
 
     if (user.role !== 'teacher' && user.role !== 'admin') {
-      return json(res, 400, { error: 'Only teacher or admin accounts can bootstrap school setup' })
+      return jsonResponse(400, { error: 'Only teacher or admin accounts can bootstrap school setup' })
     }
 
     if (user.school_id) {
-      return json(res, 200, {
+      return jsonResponse(200, {
         school_id: user.school_id,
         created_school: false,
       })
@@ -100,7 +100,7 @@ export default async function handler(req: any, res: any) {
     const school = schools[0]
 
     if (!school?.id) {
-      return json(res, 500, { error: 'Failed to create school record' })
+      return jsonResponse(500, { error: 'Failed to create school record' })
     }
 
     await supabaseAdminRequest(
@@ -114,13 +114,13 @@ export default async function handler(req: any, res: any) {
       }
     )
 
-    return json(res, 200, {
+    return jsonResponse(200, {
       school_id: school.id,
       school_name: school.name,
       created_school: true,
     })
   } catch (error) {
     console.error('bootstrap-teacher failed', error)
-    return json(res, 500, { error: 'Could not complete school setup' })
+    return jsonResponse(500, { error: 'Could not complete school setup' })
   }
 }

@@ -1,7 +1,10 @@
-export function json(res: any, status: number, payload: unknown) {
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.end(JSON.stringify(payload))
+export function jsonResponse(status: number, payload: unknown): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
 }
 
 export function normalizeText(value: string): string {
@@ -12,8 +15,13 @@ export function normalizeEmail(value: string): string {
   return normalizeText(value).toLowerCase()
 }
 
-export function parseBearerToken(req: any): string {
-  const authHeader = String(req.headers?.authorization || req.headers?.Authorization || '')
+export function parseBearerToken(req: Request | any): string {
+  if (typeof req?.headers?.get === 'function') {
+    const authHeader = String(req.headers.get('authorization') || '')
+    return authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
+  }
+
+  const authHeader = String(req?.headers?.authorization || req?.headers?.Authorization || '')
   return authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
 }
 
