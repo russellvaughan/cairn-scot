@@ -9,6 +9,7 @@ import LogAchievement from './pages/teacher/LogAchievement'
 import PupilDetail from './pages/teacher/PupilDetail'
 import PendingReviews from './pages/teacher/PendingReviews'
 import AddPupil from './pages/teacher/AddPupil'
+import TeacherSetup from './pages/teacher/TeacherSetup'
 import ChildFeed from './pages/parent/ChildFeed'
 import AddOutside from './pages/parent/AddOutside'
 import StudentDemo from './pages/student/StudentDemo'
@@ -84,6 +85,9 @@ export default function App() {
         } />
         <Route path="/teacher/pupils/new" element={
           <TeacherShell><AddPupil /></TeacherShell>
+        } />
+        <Route path="/teacher/setup" element={
+          <FullShell><TeacherSetup /></FullShell>
         } />
 
         {/* Parent routes */}

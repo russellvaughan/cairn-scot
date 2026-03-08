@@ -461,7 +461,7 @@ export default function LogAchievement() {
 
       const schoolId = users[0]?.school_id
       if (!schoolId) {
-        throw new Error('Your user profile is not linked to a school yet.')
+        throw new Error('Your school setup is not complete yet. Enter your school in Teacher Setup first.')
       }
 
       let outcomeId: string | null = null

@@ -96,7 +96,7 @@ export default function AddPupil() {
 
       const user = users[0]
       if (!user?.school_id) {
-        throw new Error('Your account is not linked to a school yet. Add school_id to your user profile first.')
+        throw new Error('Your school setup is not complete yet. Open Teacher Setup and enter your school first.')
       }
 
       const classes = await supabaseSelect<DbClassRow[]>(

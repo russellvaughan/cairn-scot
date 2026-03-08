@@ -28,6 +28,7 @@ type DbUserRow = {
   role: string
   email: string
   full_name: string
+  school_id: string | null
 }
 
 function guessFullName(email?: string): string {
@@ -75,13 +76,14 @@ export default function AuthCallback({ onRoleResolved }: Props) {
         'teacher'
 
       let resolvedRole: UserRole = preferredRole
+      let needsTeacherSetup = false
 
       if (authUser?.id && accessToken) {
         try {
           const existing = await supabaseSelect<DbUserRow[]>(
             'users',
             {
-              select: 'id,role,email,full_name',
+              select: 'id,role,email,full_name,school_id',
               id: `eq.${authUser.id}`,
               limit: '1',
             },
@@ -91,6 +93,9 @@ export default function AuthCallback({ onRoleResolved }: Props) {
           const profile = existing[0]
           if (profile) {
             if (isUserRole(profile.role)) resolvedRole = profile.role
+            if (resolvedRole === 'teacher' && !profile.school_id) {
+              needsTeacherSetup = true
+            }
           } else {
             const email = authUser.email || ''
             const metadataName = authUser.user_metadata?.full_name
@@ -114,6 +119,9 @@ export default function AuthCallback({ onRoleResolved }: Props) {
             if (inserted[0] && isUserRole(inserted[0].role)) {
               resolvedRole = inserted[0].role
             }
+            if (resolvedRole === 'teacher' && !inserted[0]?.school_id) {
+              needsTeacherSetup = true
+            }
           }
         } catch {
           // Keep auth flow resilient: route by preferred role even if profile bootstrap fails.
@@ -127,7 +135,8 @@ export default function AuthCallback({ onRoleResolved }: Props) {
         window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`)
       }
 
-      navigate(ROLE_ROUTES[resolvedRole], { replace: true })
+      const nextPath = resolvedRole === 'teacher' && needsTeacherSetup ? '/teacher/setup' : ROLE_ROUTES[resolvedRole]
+      navigate(nextPath, { replace: true })
     }
 
     void resolve()

@@ -90,6 +90,7 @@ export default function ClassOverview() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [dataHint, setDataHint] = useState<string | null>(null)
+  const [schoolSetupRequired, setSchoolSetupRequired] = useState(false)
   const [classTitle, setClassTitle] = useState('P5 Thistle')
   const [pupils, setPupils] = useState<LocalPupil[]>(mockPupils)
   const [achievements, setAchievements] = useState<LocalAchievement[]>(
@@ -117,6 +118,7 @@ export default function ClassOverview() {
           achievementDate: item.achievementDate,
         }))
       )
+      setSchoolSetupRequired(false)
       setDataHint(hint || null)
       setLoading(false)
     }
@@ -134,6 +136,7 @@ export default function ClassOverview() {
           setClassTitle('Teacher workspace')
           setPupils([])
           setAchievements([])
+          setSchoolSetupRequired(false)
           setDataHint('Your session could not be verified. Sign in again to load your class data.')
           setLoading(false)
           return
@@ -154,7 +157,8 @@ export default function ClassOverview() {
           setClassTitle('Teacher setup needed')
           setPupils([])
           setAchievements([])
-          setDataHint('Your teacher profile is missing a school link. Set users.school_id for this account to enable live data.')
+          setSchoolSetupRequired(true)
+          setDataHint('Your teacher profile is not linked yet. Add your school to finish setup.')
           setLoading(false)
           return
         }
@@ -175,6 +179,7 @@ export default function ClassOverview() {
           setClassTitle('No class assigned yet')
           setPupils([])
           setAchievements([])
+          setSchoolSetupRequired(false)
           setDataHint('Create or assign a class, then add pupils to start logging achievements.')
           setLoading(false)
           return
@@ -229,12 +234,14 @@ export default function ClassOverview() {
         setClassTitle(activeClass.name)
         setPupils(mappedPupils)
         setAchievements(mappedAchievements)
+        setSchoolSetupRequired(false)
         setDataHint(null)
         setLoading(false)
       } catch {
         setClassTitle('Teacher workspace')
         setPupils([])
         setAchievements([])
+        setSchoolSetupRequired(false)
         setDataHint('Live class data could not be loaded right now.')
         setLoading(false)
       }
@@ -351,6 +358,15 @@ export default function ClassOverview() {
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card" style={{ padding: '12px 14px', borderColor: '#D2DEEE' }}>
             <div style={{ fontSize: 12, color: 'var(--color-ink-soft)', lineHeight: 1.55 }}>{dataHint}</div>
+            {schoolSetupRequired && (
+              <button
+                className="btn btn-primary"
+                style={{ marginTop: 10, padding: '10px 12px', fontSize: 13 }}
+                onClick={() => navigate('/teacher/setup')}
+              >
+                Enter school
+              </button>
+            )}
           </div>
         </div>
       )}
