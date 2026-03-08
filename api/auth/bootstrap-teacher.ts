@@ -6,7 +6,7 @@ import {
   parseBearerToken,
   supabaseAdminRequest,
   supabaseAdminSelect,
-} from '../_shared/supabase-admin'
+} from '../_shared/supabase-admin.js'
 
 type DbUserRow = {
   id: string

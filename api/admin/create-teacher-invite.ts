@@ -1,12 +1,12 @@
-import { createSignedToken, getInviteSigningSecret } from '../_shared/invite-tokens'
-import { readEnv, readFirstEnv } from '../_shared/env'
+import { createSignedToken, getInviteSigningSecret } from '../_shared/invite-tokens.js'
+import { readEnv, readFirstEnv } from '../_shared/env.js'
 import {
   getRequesterProfile,
   getSupabaseServerConfig,
   jsonResponse,
   normalizeEmail,
   parseBearerToken,
-} from '../_shared/supabase-admin'
+} from '../_shared/supabase-admin.js'
 
 type TeacherInviteTokenPayload = {
   typ: 'teacher_invite'

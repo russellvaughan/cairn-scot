@@ -1,4 +1,4 @@
-import { readEnv } from './env'
+import { readEnv } from './env.js'
 
 type BasePayload = {
   typ: string
@@ -50,10 +50,14 @@ function fromBase64Url(value: string): Uint8Array {
   return base64ToBytes(base64)
 }
 
+function toBufferSource(bytes: Uint8Array): ArrayBuffer {
+  return new Uint8Array(bytes).buffer
+}
+
 async function importSigningKey(secret: string): Promise<CryptoKey> {
   return await crypto.subtle.importKey(
     'raw',
-    utf8ToBytes(secret),
+    toBufferSource(utf8ToBytes(secret)),
     {
       name: 'HMAC',
       hash: 'SHA-256',
@@ -70,7 +74,7 @@ export function getInviteSigningSecret(serviceRoleKey: string): string {
 export async function createSignedToken<T extends BasePayload>(payload: T, secret: string): Promise<string> {
   const payloadEncoded = toBase64UrlText(JSON.stringify(payload))
   const key = await importSigningKey(secret)
-  const signature = await crypto.subtle.sign('HMAC', key, utf8ToBytes(payloadEncoded))
+  const signature = await crypto.subtle.sign('HMAC', key, toBufferSource(utf8ToBytes(payloadEncoded)))
   const signatureEncoded = toBase64Url(new Uint8Array(signature))
   return `${payloadEncoded}.${signatureEncoded}`
 }
@@ -87,8 +91,8 @@ export async function verifySignedToken<T extends BasePayload>(token: string, se
     const isValid = await crypto.subtle.verify(
       'HMAC',
       key,
-      fromBase64Url(signatureEncoded),
-      utf8ToBytes(payloadEncoded)
+      toBufferSource(fromBase64Url(signatureEncoded)),
+      toBufferSource(utf8ToBytes(payloadEncoded))
     )
 
     if (!isValid) return null

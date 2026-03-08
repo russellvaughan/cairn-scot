@@ -1,4 +1,4 @@
-import { readEnv } from './env'
+import { readEnv } from './env.js'
 
 export function jsonResponse(status: number, payload: unknown): Response {
   return new Response(JSON.stringify(payload), {

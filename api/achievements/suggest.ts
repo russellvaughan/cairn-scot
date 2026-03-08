@@ -1,4 +1,4 @@
-import { readEnv, readEnvOr } from '../_shared/env'
+import { readEnv, readEnvOr } from '../_shared/env.js'
 
 const CURRICULUM_AREAS = [
   'literacy_english',

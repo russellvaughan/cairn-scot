@@ -1,4 +1,4 @@
-import { getInviteSigningSecret, verifySignedToken } from '../_shared/invite-tokens'
+import { getInviteSigningSecret, verifySignedToken } from '../_shared/invite-tokens.js'
 import {
   authUserFromToken,
   getSupabaseServerConfig,
@@ -7,7 +7,7 @@ import {
   parseBearerToken,
   supabaseAdminRequest,
   supabaseAdminSelect,
-} from '../_shared/supabase-admin'
+} from '../_shared/supabase-admin.js'
 
 type ParentLinkTokenPayload = {
   typ: 'parent_link'

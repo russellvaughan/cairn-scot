@@ -1,5 +1,5 @@
-import { createSignedToken, getInviteSigningSecret } from '../_shared/invite-tokens'
-import { readEnv, readFirstEnv } from '../_shared/env'
+import { createSignedToken, getInviteSigningSecret } from '../_shared/invite-tokens.js'
+import { readEnv, readFirstEnv } from '../_shared/env.js'
 import {
   getRequesterProfile,
   getSupabaseServerConfig,
@@ -7,7 +7,7 @@ import {
   normalizeText,
   parseBearerToken,
   supabaseAdminSelect,
-} from '../_shared/supabase-admin'
+} from '../_shared/supabase-admin.js'
 
 type ParentLinkTokenPayload = {
   typ: 'parent_link'
