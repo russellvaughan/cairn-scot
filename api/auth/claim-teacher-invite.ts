@@ -49,7 +49,7 @@ export default async function handler(req: Request) {
     }
 
     const secret = getInviteSigningSecret(serviceRoleKey)
-    const payload = verifySignedToken<TeacherInviteTokenPayload>(token, secret)
+    const payload = await verifySignedToken<TeacherInviteTokenPayload>(token, secret)
     if (!payload || payload.typ !== 'teacher_invite' || !payload.school_id) {
       return jsonResponse(400, { error: 'Invalid or expired teacher invite token' })
     }

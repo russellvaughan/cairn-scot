@@ -1,4 +1,5 @@
 import { createSignedToken, getInviteSigningSecret } from '../_shared/invite-tokens'
+import { readEnv, readFirstEnv } from '../_shared/env'
 import {
   getRequesterProfile,
   getSupabaseServerConfig,
@@ -16,12 +17,13 @@ type TeacherInviteTokenPayload = {
 }
 
 function getPublicAppOrigin(req: Request): string {
-  const configured =
-    process.env.PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.VITE_PUBLIC_APP_URL ||
-    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-    process.env.VERCEL_URL
+  const configured = readFirstEnv([
+    'PUBLIC_APP_URL',
+    'NEXT_PUBLIC_APP_URL',
+    'VITE_PUBLIC_APP_URL',
+    'VERCEL_PROJECT_PRODUCTION_URL',
+    'VERCEL_URL',
+  ])
 
   if (configured) {
     return configured.startsWith('http') ? configured.replace(/\/+$/, '') : `https://${configured.replace(/\/+$/, '')}`
@@ -71,7 +73,7 @@ export default async function handler(req: Request) {
     }
 
     const now = Math.floor(Date.now() / 1000)
-    const ttlHoursRaw = Number(process.env.TEACHER_INVITE_TTL_HOURS || 168)
+    const ttlHoursRaw = Number(readEnv('TEACHER_INVITE_TTL_HOURS') || 168)
     const ttlHours = Number.isFinite(ttlHoursRaw) && ttlHoursRaw > 0 ? ttlHoursRaw : 168
     const payload: TeacherInviteTokenPayload = {
       typ: 'teacher_invite',
@@ -82,7 +84,7 @@ export default async function handler(req: Request) {
     }
 
     const secret = getInviteSigningSecret(serviceRoleKey)
-    const token = createSignedToken(payload, secret)
+    const token = await createSignedToken(payload, secret)
     const appOrigin = getPublicAppOrigin(req)
     const inviteUrl = `${appOrigin}/home?invite_teacher=${encodeURIComponent(token)}`
 

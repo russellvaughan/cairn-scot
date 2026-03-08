@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { readEnv } from './env'
 
 type BasePayload = {
   typ: string
@@ -6,44 +6,94 @@ type BasePayload = {
   exp: number
 }
 
-function toBase64Url(input: Buffer | string): string {
-  return Buffer.from(input).toString('base64url')
+function utf8ToBytes(value: string): Uint8Array {
+  return new TextEncoder().encode(value)
 }
 
-function fromBase64Url(input: string): Buffer {
-  return Buffer.from(input, 'base64url')
+function bytesToUtf8(value: Uint8Array): string {
+  return new TextDecoder().decode(value)
 }
 
-function sign(payloadEncoded: string, secret: string): string {
-  return toBase64Url(createHmac('sha256', secret).update(payloadEncoded).digest())
+function bytesToBase64(value: Uint8Array): string {
+  let binary = ''
+  for (let index = 0; index < value.length; index += 1) {
+    binary += String.fromCharCode(value[index] || 0)
+  }
+  return btoa(binary)
+}
+
+function base64ToBytes(value: string): Uint8Array {
+  const binary = atob(value)
+  const bytes = new Uint8Array(binary.length)
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+  return bytes
+}
+
+function toBase64Url(value: Uint8Array): string {
+  return bytesToBase64(value)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '')
+}
+
+function toBase64UrlText(value: string): string {
+  return toBase64Url(utf8ToBytes(value))
+}
+
+function fromBase64Url(value: string): Uint8Array {
+  const base64 = value
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .padEnd(Math.ceil(value.length / 4) * 4, '=')
+  return base64ToBytes(base64)
+}
+
+async function importSigningKey(secret: string): Promise<CryptoKey> {
+  return await crypto.subtle.importKey(
+    'raw',
+    utf8ToBytes(secret),
+    {
+      name: 'HMAC',
+      hash: 'SHA-256',
+    },
+    false,
+    ['sign', 'verify']
+  )
 }
 
 export function getInviteSigningSecret(serviceRoleKey: string): string {
-  return process.env.INVITE_SIGNING_SECRET || serviceRoleKey
+  return readEnv('INVITE_SIGNING_SECRET') || serviceRoleKey
 }
 
-export function createSignedToken<T extends BasePayload>(payload: T, secret: string): string {
-  const payloadEncoded = toBase64Url(JSON.stringify(payload))
-  const signatureEncoded = sign(payloadEncoded, secret)
+export async function createSignedToken<T extends BasePayload>(payload: T, secret: string): Promise<string> {
+  const payloadEncoded = toBase64UrlText(JSON.stringify(payload))
+  const key = await importSigningKey(secret)
+  const signature = await crypto.subtle.sign('HMAC', key, utf8ToBytes(payloadEncoded))
+  const signatureEncoded = toBase64Url(new Uint8Array(signature))
   return `${payloadEncoded}.${signatureEncoded}`
 }
 
-export function verifySignedToken<T extends BasePayload>(token: string, secret: string): T | null {
+export async function verifySignedToken<T extends BasePayload>(token: string, secret: string): Promise<T | null> {
   const parts = token.split('.')
   if (parts.length !== 2) return null
 
   const [payloadEncoded, signatureEncoded] = parts
   if (!payloadEncoded || !signatureEncoded) return null
 
-  const expectedSignature = sign(payloadEncoded, secret)
-  const expectedBuffer = fromBase64Url(expectedSignature)
-  const receivedBuffer = fromBase64Url(signatureEncoded)
-
-  if (expectedBuffer.length !== receivedBuffer.length) return null
-  if (!timingSafeEqual(expectedBuffer, receivedBuffer)) return null
-
   try {
-    const payload = JSON.parse(fromBase64Url(payloadEncoded).toString('utf8')) as T
+    const key = await importSigningKey(secret)
+    const isValid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      fromBase64Url(signatureEncoded),
+      utf8ToBytes(payloadEncoded)
+    )
+
+    if (!isValid) return null
+
+    const payload = JSON.parse(bytesToUtf8(fromBase64Url(payloadEncoded))) as T
     const now = Math.floor(Date.now() / 1000)
 
     if (!payload?.typ || typeof payload.typ !== 'string') return null

@@ -47,7 +47,7 @@ export default async function handler(req: Request) {
     }
 
     const secret = getInviteSigningSecret(serviceRoleKey)
-    const payload = verifySignedToken<ParentLinkTokenPayload>(token, secret)
+    const payload = await verifySignedToken<ParentLinkTokenPayload>(token, secret)
     if (!payload || payload.typ !== 'parent_link' || !payload.school_id || !payload.pupil_id) {
       return jsonResponse(400, { error: 'Invalid or expired parent link token' })
     }

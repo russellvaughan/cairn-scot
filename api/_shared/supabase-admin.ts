@@ -1,3 +1,5 @@
+import { readEnv } from './env'
+
 export function jsonResponse(status: number, payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
     status,
@@ -26,8 +28,8 @@ export function parseBearerToken(req: Request | any): string {
 }
 
 export function getSupabaseServerConfig() {
-  const supabaseUrl = (process.env.SUPABASE_URL || '').replace(/\/+$/, '')
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  const supabaseUrl = (readEnv('SUPABASE_URL') || '').replace(/\/+$/, '')
+  const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY') || ''
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')

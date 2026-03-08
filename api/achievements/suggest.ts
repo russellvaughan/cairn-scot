@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { readEnv, readEnvOr } from '../_shared/env'
 
 const CURRICULUM_AREAS = [
   'literacy_english',
@@ -61,8 +61,8 @@ interface RawAiResponse {
 const MIN_AI_CHARS = 30
 const CANDIDATE_LIMIT = 20
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
-const CHEAP_MODEL = process.env.ANTHROPIC_MODEL_CHEAP || 'claude-3-5-haiku-latest'
-const QUALITY_MODEL = process.env.ANTHROPIC_MODEL_QUALITY || 'claude-sonnet-4-20250514'
+const CHEAP_MODEL = readEnvOr('ANTHROPIC_MODEL_CHEAP', 'claude-3-5-haiku-latest')
+const QUALITY_MODEL = readEnvOr('ANTHROPIC_MODEL_QUALITY', 'claude-sonnet-4-20250514')
 const CHEAP_MAX_TOKENS = 420
 const QUALITY_MAX_TOKENS = 620
 
@@ -269,7 +269,12 @@ async function callAnthropic(
 
 function makeCacheKey(description: string, yearGroup: string, level: CfELevel): string {
   const raw = `${normalizeText(description).toLowerCase()}|${yearGroup.toLowerCase()}|${level}`
-  return createHash('sha256').update(raw).digest('hex')
+  let hash = 2166136261
+  for (let index = 0; index < raw.length; index += 1) {
+    hash ^= raw.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return `fnv1a-${(hash >>> 0).toString(16)}`
 }
 
 function getCached(cacheKey: string): SuggestionResponse | null {
@@ -369,8 +374,8 @@ export default async function handler(req: Request) {
       if (cached) return jsonResponse(200, cached)
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseUrl = readEnv('SUPABASE_URL')
+    const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceRoleKey) {
       console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
       return jsonResponse(200, manualFallback(level))
@@ -445,7 +450,7 @@ export default async function handler(req: Request) {
       rankedCandidates.map(item => [normalizeCode(item.reference_code), item])
     )
 
-    const anthropicKey = process.env.ANTHROPIC_API_KEY
+    const anthropicKey = readEnv('ANTHROPIC_API_KEY')
     if (!anthropicKey) {
       console.error('Missing ANTHROPIC_API_KEY')
       return jsonResponse(200, manualFallback(level))
