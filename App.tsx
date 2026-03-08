@@ -15,30 +15,31 @@ import AddOutside from './pages/parent/AddOutside'
 import StudentDemo from './pages/student/StudentDemo'
 import AddAchievement from './pages/student/AddAchievement'
 import BottomNav from './components/BottomNav'
+import { clearStoredSession } from './lib/supabase'
 
-function TeacherShell({ children }: { children: React.ReactNode }) {
+function TeacherShell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
   return (
     <div className="app-shell">
       <div className="page-content">{children}</div>
-      <BottomNav role="teacher" />
+      <BottomNav role="teacher" onLogout={onLogout} />
     </div>
   )
 }
 
-function ParentShell({ children }: { children: React.ReactNode }) {
+function ParentShell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
   return (
     <div className="app-shell">
       <div className="page-content">{children}</div>
-      <BottomNav role="parent" />
+      <BottomNav role="parent" onLogout={onLogout} />
     </div>
   )
 }
 
-function StudentShell({ children }: { children: React.ReactNode }) {
+function StudentShell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
   return (
     <div className="app-shell">
       <div className="page-content">{children}</div>
-      <BottomNav role="student" />
+      <BottomNav role="student" onLogout={onLogout} />
     </div>
   )
 }
@@ -56,6 +57,12 @@ export default function App() {
   const hasMagicLinkHash =
     typeof window !== 'undefined' && window.location.hash.includes('access_token')
 
+  const handleLogout = () => {
+    clearStoredSession()
+    localStorage.removeItem('cairn_last_role')
+    setRole(null)
+  }
+
   return (
     <BrowserRouter>
       <Routes>
@@ -72,19 +79,19 @@ export default function App() {
 
         {/* Teacher routes */}
         <Route path="/teacher" element={
-          <TeacherShell><ClassOverview /></TeacherShell>
+          <TeacherShell onLogout={handleLogout}><ClassOverview /></TeacherShell>
         } />
         <Route path="/teacher/log" element={
-          <TeacherShell><LogAchievement /></TeacherShell>
+          <TeacherShell onLogout={handleLogout}><LogAchievement /></TeacherShell>
         } />
         <Route path="/teacher/pupil/:id" element={
-          <TeacherShell><PupilDetail /></TeacherShell>
+          <TeacherShell onLogout={handleLogout}><PupilDetail /></TeacherShell>
         } />
         <Route path="/teacher/pending" element={
-          <TeacherShell><PendingReviews /></TeacherShell>
+          <TeacherShell onLogout={handleLogout}><PendingReviews /></TeacherShell>
         } />
         <Route path="/teacher/pupils/new" element={
-          <TeacherShell><AddPupil /></TeacherShell>
+          <TeacherShell onLogout={handleLogout}><AddPupil /></TeacherShell>
         } />
         <Route path="/teacher/setup" element={
           <FullShell><TeacherSetup /></FullShell>
@@ -92,18 +99,18 @@ export default function App() {
 
         {/* Parent routes */}
         <Route path="/parent" element={
-          <ParentShell><ChildFeed /></ParentShell>
+          <ParentShell onLogout={handleLogout}><ChildFeed /></ParentShell>
         } />
         <Route path="/parent/add-outside" element={
-          <ParentShell><AddOutside /></ParentShell>
+          <ParentShell onLogout={handleLogout}><AddOutside /></ParentShell>
         } />
 
         {/* Student routes */}
         <Route path="/student" element={
-          <StudentShell><StudentDemo /></StudentShell>
+          <StudentShell onLogout={handleLogout}><StudentDemo /></StudentShell>
         } />
         <Route path="/student/add-achievement" element={
-          <StudentShell><AddAchievement /></StudentShell>
+          <StudentShell onLogout={handleLogout}><AddAchievement /></StudentShell>
         } />
 
         {/* Fallback */}

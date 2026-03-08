@@ -3,31 +3,40 @@ import type { UserRole } from '../types'
 
 interface Props {
   role: UserRole
+  onLogout: () => void
+}
+
+type NavTab = {
+  path: string
+  label: string
+  icon: ({ color }: { color: string }) => JSX.Element
+  badge?: boolean
+  action?: 'logout'
 }
 
 const teacherTabs = [
   { path: '/teacher',         label: 'Class',   icon: HomeIcon },
   { path: '/teacher/log',     label: 'Log',     icon: PlusIcon },
   { path: '/teacher/pending', label: 'Reviews', icon: InboxIcon, badge: true },
-  { path: '/home',            label: 'Home',    icon: GridIcon },
-]
+  { path: '/logout',          label: 'Logout',  icon: LogoutIcon, action: 'logout' },
+] as NavTab[]
 
 const parentTabs = [
   { path: '/parent',             label: 'Feed', icon: HomeIcon },
   { path: '/parent/add-outside', label: 'Add',  icon: PlusIcon },
-  { path: '/home',               label: 'Home', icon: GridIcon },
-]
+  { path: '/logout',             label: 'Logout', icon: LogoutIcon, action: 'logout' },
+] as NavTab[]
 
 const studentTabs = [
   { path: '/student',                 label: 'Feed', icon: HomeIcon },
   { path: '/student/add-achievement', label: 'Add',  icon: PlusIcon },
-  { path: '/home',                    label: 'Home', icon: GridIcon },
-]
+  { path: '/logout',                  label: 'Logout', icon: LogoutIcon, action: 'logout' },
+] as NavTab[]
 
-export default function BottomNav({ role }: Props) {
+export default function BottomNav({ role, onLogout }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
-  const tabs = role === 'teacher' ? teacherTabs : role === 'parent' ? parentTabs : studentTabs
+  const tabs: NavTab[] = role === 'teacher' ? teacherTabs : role === 'parent' ? parentTabs : studentTabs
 
   return (
     <nav style={{
@@ -55,14 +64,22 @@ export default function BottomNav({ role }: Props) {
         }}
       >
         {tabs.map(tab => {
+          const isLogout = tab.action === 'logout'
           const active = tab.path === `/${role}`
             ? location.pathname === tab.path
-            : location.pathname.startsWith(tab.path)
+            : !isLogout && location.pathname.startsWith(tab.path)
           const Icon = tab.icon
           return (
             <button
               key={tab.path}
-              onClick={() => navigate(tab.path)}
+              onClick={() => {
+                if (isLogout) {
+                  onLogout()
+                  navigate('/home', { replace: true })
+                  return
+                }
+                navigate(tab.path)
+              }}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -79,7 +96,7 @@ export default function BottomNav({ role }: Props) {
             >
               <div style={{ position: 'relative' }}>
                 <Icon color={active ? 'var(--color-sky)' : 'var(--color-ink-muted)'} />
-                {(tab as any).badge && (
+                {tab.badge && (
                   <span style={{
                     position: 'absolute', top: -2, right: -2,
                     width: 7, height: 7,
@@ -136,6 +153,16 @@ function GridIcon({ color }: { color: string }) {
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
       <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  )
+}
+
+function LogoutIcon({ color }: { color: string }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   )
 }

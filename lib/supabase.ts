@@ -35,6 +35,12 @@ export function setStoredSession(accessToken?: string | null, refreshToken?: str
   if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
 }
 
+export function clearStoredSession() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  localStorage.removeItem(USER_ID_KEY)
+}
+
 export function getStoredAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY)
 }
