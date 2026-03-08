@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { UserRole } from '../../types'
 import {
+  clearStoredSession,
   fetchAuthUser,
   getStoredAccessToken,
   setStoredSession,
@@ -59,15 +60,26 @@ export default function AuthCallback({ onRoleResolved }: Props) {
 
       let roleFromProfile: string | null = null
       const accessToken = accessTokenFromHash || getStoredAccessToken()
+      if (!accessToken) {
+        clearStoredSession()
+        localStorage.removeItem('cairn_last_role')
+        navigate('/home', { replace: true })
+        return
+      }
 
       const authUser = await fetchAuthUser(accessToken)
-      if (authUser?.id) {
-        setStoredUserId(authUser.id)
-        roleFromProfile =
-          (authUser.user_metadata?.role as string | null) ??
-          (authUser.app_metadata?.role as string | null) ??
-          null
+      if (!authUser?.id) {
+        clearStoredSession()
+        localStorage.removeItem('cairn_last_role')
+        navigate('/home', { replace: true })
+        return
       }
+
+      setStoredUserId(authUser.id)
+      roleFromProfile =
+        (authUser.user_metadata?.role as string | null) ??
+        (authUser.app_metadata?.role as string | null) ??
+        null
 
       const preferredRole =
         (isUserRole(roleFromProfile) ? roleFromProfile : null) ||

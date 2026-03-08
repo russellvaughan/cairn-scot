@@ -15,7 +15,7 @@ import AddOutside from './pages/parent/AddOutside'
 import StudentDemo from './pages/student/StudentDemo'
 import AddAchievement from './pages/student/AddAchievement'
 import BottomNav from './components/BottomNav'
-import { clearStoredSession } from './lib/supabase'
+import { clearStoredSession, getStoredAccessToken } from './lib/supabase'
 
 function TeacherShell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
   return (
@@ -56,6 +56,8 @@ export default function App() {
   })
   const hasMagicLinkHash =
     typeof window !== 'undefined' && window.location.hash.includes('access_token')
+  const hasStoredSession =
+    typeof window !== 'undefined' && !!getStoredAccessToken()
 
   const handleLogout = () => {
     clearStoredSession()
@@ -68,10 +70,10 @@ export default function App() {
       <Routes>
         {/* Auth */}
         <Route path="/" element={
-          role
-            ? <Navigate to={role === 'teacher' ? '/teacher' : role === 'parent' ? '/parent' : '/student'} replace />
-            : hasMagicLinkHash
-              ? <FullShell><AuthCallback onRoleResolved={setRole} /></FullShell>
+          hasMagicLinkHash
+            ? <FullShell><AuthCallback onRoleResolved={setRole} /></FullShell>
+            : role && hasStoredSession
+              ? <Navigate to={role === 'teacher' ? '/teacher' : role === 'parent' ? '/parent' : '/student'} replace />
               : <FullShell><SignIn onRoleSelect={setRole} /></FullShell>
         } />
         <Route path="/home" element={<FullShell><SignIn onRoleSelect={setRole} /></FullShell>} />
