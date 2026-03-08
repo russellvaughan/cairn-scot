@@ -24,7 +24,7 @@ create table if not exists public.users (
   id uuid primary key,
   email text unique not null,
   full_name text not null,
-  role text not null check (role in ('teacher', 'parent', 'admin')),
+  role text not null check (role in ('teacher', 'parent', 'admin', 'student')),
   school_id uuid references public.schools(id),
   ai_enabled_override boolean default null,
   created_at timestamptz not null default now(),

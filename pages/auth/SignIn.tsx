@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import type { UserRole } from '../../types'
 
 interface Props {
@@ -12,28 +12,49 @@ const ROLE_LABEL: Record<UserRole, string> = {
   teacher: 'Teacher',
   parent: 'Parent',
   student: 'Student',
+  admin: 'Admin',
 }
 
 const ROLE_HINT: Record<UserRole, string> = {
   teacher: 'Log and review achievements',
   parent: 'Track and submit achievements',
   student: 'View progress and achievements',
+  admin: 'Manage school and staff',
 }
 
 const ROLE_ROUTE: Record<UserRole, string> = {
   teacher: '/teacher',
   parent: '/parent',
   student: '/student',
+  admin: '/admin',
 }
 
 export default function SignIn({ onRoleSelect }: Props) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const search = new URLSearchParams(location.search)
+  const teacherInviteToken = search.get('invite_teacher')
+  const parentLinkCode = search.get('link_child')
   const [step, setStep] = useState<'role' | 'email' | 'sent'>('role')
   const [email, setEmail] = useState('')
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null)
   const [authMode, setAuthMode] = useState<AuthMode>('signin')
   const [sending, setSending] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (teacherInviteToken) {
+      setSelectedRole('teacher')
+      setAuthMode('signup')
+      setStep('email')
+      return
+    }
+    if (parentLinkCode) {
+      setSelectedRole('parent')
+      setAuthMode('signup')
+      setStep('email')
+    }
+  }, [parentLinkCode, teacherInviteToken])
 
   const handleRoleSelect = (role: UserRole) => {
     localStorage.setItem('cairn_last_role', role)
@@ -65,6 +86,15 @@ export default function SignIn({ onRoleSelect }: Props) {
     setErrorMessage(null)
 
     try {
+      const callbackUrl = new URL('/auth/callback', window.location.origin)
+      callbackUrl.searchParams.set('role', selectedRole)
+      if (selectedRole === 'teacher' && teacherInviteToken) {
+        callbackUrl.searchParams.set('invite_teacher', teacherInviteToken)
+      }
+      if (selectedRole === 'parent' && parentLinkCode) {
+        callbackUrl.searchParams.set('link_child', parentLinkCode)
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -75,7 +105,7 @@ export default function SignIn({ onRoleSelect }: Props) {
         body: JSON.stringify({
           email: normalizedEmail,
           create_user: authMode === 'signup',
-          email_redirect_to: `${window.location.origin}/auth/callback?role=${selectedRole}`,
+          email_redirect_to: callbackUrl.toString(),
           data: { role: selectedRole },
         }),
       })
@@ -235,6 +265,22 @@ export default function SignIn({ onRoleSelect }: Props) {
             >
               ← Back
             </button>
+
+            {selectedRole === 'teacher' && teacherInviteToken && (
+              <div className="card" style={{ padding: '12px 14px', marginBottom: 12, borderColor: '#D2DEEE' }}>
+                <div style={{ fontSize: 12, color: 'var(--color-ink-soft)', lineHeight: 1.5 }}>
+                  You are joining via a teacher invite link. Use the invited email to auto-link your school.
+                </div>
+              </div>
+            )}
+
+            {selectedRole === 'parent' && parentLinkCode && (
+              <div className="card" style={{ padding: '12px 14px', marginBottom: 12, borderColor: '#D2DEEE' }}>
+                <div style={{ fontSize: 12, color: 'var(--color-ink-soft)', lineHeight: 1.5 }}>
+                  You are linking to your child via a parent QR/code link. Use your own email to continue.
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 16 }}>
               <button

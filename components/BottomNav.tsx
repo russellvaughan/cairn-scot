@@ -33,10 +33,22 @@ const studentTabs = [
   { path: '/logout',                  label: 'Logout', icon: LogoutIcon, action: 'logout' },
 ] as NavTab[]
 
+const adminTabs = [
+  { path: '/admin', label: 'School', icon: HomeIcon },
+  { path: '/logout', label: 'Logout', icon: LogoutIcon, action: 'logout' },
+] as NavTab[]
+
 export default function BottomNav({ role, onLogout }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
-  const tabs: NavTab[] = role === 'teacher' ? teacherTabs : role === 'parent' ? parentTabs : studentTabs
+  const tabs: NavTab[] =
+    role === 'teacher'
+      ? teacherTabs
+      : role === 'parent'
+        ? parentTabs
+        : role === 'student'
+          ? studentTabs
+          : adminTabs
 
   return (
     <nav style={{

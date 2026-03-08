@@ -10,6 +10,8 @@ import PupilDetail from './pages/teacher/PupilDetail'
 import PendingReviews from './pages/teacher/PendingReviews'
 import AddPupil from './pages/teacher/AddPupil'
 import TeacherSetup from './pages/teacher/TeacherSetup'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminSetup from './pages/admin/AdminSetup'
 import ChildFeed from './pages/parent/ChildFeed'
 import AddOutside from './pages/parent/AddOutside'
 import StudentDemo from './pages/student/StudentDemo'
@@ -44,15 +46,31 @@ function StudentShell({ children, onLogout }: { children: React.ReactNode; onLog
   )
 }
 
+function AdminShell({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
+  return (
+    <div className="app-shell">
+      <div className="page-content">{children}</div>
+      <BottomNav role="admin" onLogout={onLogout} />
+    </div>
+  )
+}
+
 function FullShell({ children }: { children: React.ReactNode }) {
   return <div className="app-shell"><div className="page-content no-bottom-nav">{children}</div></div>
+}
+
+function getDefaultRoute(role: UserRole): string {
+  if (role === 'teacher') return '/teacher'
+  if (role === 'parent') return '/parent'
+  if (role === 'student') return '/student'
+  return '/admin'
 }
 
 export default function App() {
   const [role, setRole] = useState<UserRole | null>(() => {
     if (typeof window === 'undefined') return null
     const stored = localStorage.getItem('cairn_last_role')
-    return stored === 'teacher' || stored === 'parent' || stored === 'student' ? stored : null
+    return stored === 'teacher' || stored === 'parent' || stored === 'student' || stored === 'admin' ? stored : null
   })
   const hasMagicLinkHash =
     typeof window !== 'undefined' && window.location.hash.includes('access_token')
@@ -73,7 +91,7 @@ export default function App() {
           hasMagicLinkHash
             ? <FullShell><AuthCallback onRoleResolved={setRole} /></FullShell>
             : role && hasStoredSession
-              ? <Navigate to={role === 'teacher' ? '/teacher' : role === 'parent' ? '/parent' : '/student'} replace />
+              ? <Navigate to={getDefaultRoute(role)} replace />
               : <FullShell><SignIn onRoleSelect={setRole} /></FullShell>
         } />
         <Route path="/home" element={<FullShell><SignIn onRoleSelect={setRole} /></FullShell>} />
@@ -97,6 +115,14 @@ export default function App() {
         } />
         <Route path="/teacher/setup" element={
           <FullShell><TeacherSetup /></FullShell>
+        } />
+
+        {/* Admin routes */}
+        <Route path="/admin" element={
+          <AdminShell onLogout={handleLogout}><AdminDashboard /></AdminShell>
+        } />
+        <Route path="/admin/setup" element={
+          <FullShell><AdminSetup /></FullShell>
         } />
 
         {/* Parent routes */}

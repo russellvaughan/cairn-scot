@@ -55,6 +55,9 @@ Every time you push to GitHub, Vercel redeploys automatically.
 3. Click **Run**
 4. You should see "Success" with no errors
 
+If you already had an older schema deployed and student signups fail, also run:
+`docs/sql/add-student-role.sql`
+
 This now includes:
 - Core Cairn tables + RLS policies
 - `achievement_media` table for photo/video attachments
@@ -164,11 +167,18 @@ SUPABASE_SERVICE_ROLE_KEY = your-service-role-key
 ANTHROPIC_API_KEY = sk-ant-...
 ANTHROPIC_MODEL_CHEAP = claude-3-5-haiku-latest
 ANTHROPIC_MODEL_QUALITY = claude-sonnet-4-20250514
+PUBLIC_APP_URL = https://your-app-domain.vercel.app
+INVITE_SIGNING_SECRET = long-random-secret-string
+TEACHER_INVITE_TTL_HOURS = 168
+PARENT_LINK_TTL_HOURS = 168
 ```
 
 Notes:
 - `SUPABASE_SERVICE_ROLE_KEY` must never be exposed to the frontend.
 - `ANTHROPIC_MODEL_CHEAP` and `ANTHROPIC_MODEL_QUALITY` are optional; defaults are shown above.
+- `PUBLIC_APP_URL` is used when generating teacher invite links and parent QR links.
+- `INVITE_SIGNING_SECRET` is strongly recommended for signing invite/link tokens (falls back to service role key if omitted).
+- `TEACHER_INVITE_TTL_HOURS` and `PARENT_LINK_TTL_HOURS` are optional link expiry controls.
 - Keep all secrets in Vercel env vars only, never in git.
 
 ---

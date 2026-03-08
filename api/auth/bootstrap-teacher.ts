@@ -1,11 +1,18 @@
-function json(res: any, status: number, payload: unknown) {
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.end(JSON.stringify(payload))
-}
+import {
+  authUserFromToken,
+  getSupabaseServerConfig,
+  json,
+  normalizeText,
+  parseBearerToken,
+  supabaseAdminRequest,
+  supabaseAdminSelect,
+} from '../_shared/supabase-admin'
 
-function normalizeText(value: string): string {
-  return value.replace(/\s+/g, ' ').trim()
+type DbUserRow = {
+  id: string
+  role: string
+  email: string
+  school_id: string | null
 }
 
 function fallbackSchoolName(email?: string): string {
@@ -24,56 +31,13 @@ function fallbackSchoolName(email?: string): string {
   return `${titled} School`
 }
 
-async function supabaseRequest(
-  supabaseUrl: string,
-  serviceRoleKey: string,
-  path: string,
-  init: RequestInit = {}
-) {
-  const response = await fetch(`${supabaseUrl}${path}`, {
-    ...init,
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
-  })
-
-  if (!response.ok) {
-    const body = await response.text()
-    throw new Error(`Supabase request failed (${response.status}): ${body}`)
-  }
-
-  return response
-}
-
-async function authUserFromToken(supabaseUrl: string, serviceRoleKey: string, accessToken: string) {
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  })
-
-  if (!response.ok) return null
-  return await response.json()
-}
-
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed' })
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return json(res, 500, { error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' })
-  }
-
   try {
+    const { supabaseUrl, serviceRoleKey } = getSupabaseServerConfig()
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
     const userId = normalizeText(String(body.user_id || ''))
     const schoolNameInput = normalizeText(String(body.school_name || ''))
@@ -82,9 +46,7 @@ export default async function handler(req: any, res: any) {
       return json(res, 400, { error: 'user_id is required' })
     }
 
-    const authHeader = String(req.headers?.authorization || req.headers?.Authorization || '')
-    const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
-
+    const accessToken = parseBearerToken(req)
     if (!accessToken) {
       return json(res, 401, { error: 'Missing bearer token' })
     }
@@ -94,26 +56,24 @@ export default async function handler(req: any, res: any) {
       return json(res, 403, { error: 'Unauthorized for requested user_id' })
     }
 
-    const usersResponse = await supabaseRequest(
+    const users = await supabaseAdminSelect<DbUserRow[]>(
       supabaseUrl,
       serviceRoleKey,
-      `/rest/v1/users?select=id,role,email,full_name,school_id&id=eq.${userId}&limit=1`
+      'users',
+      {
+        select: 'id,role,email,school_id',
+        id: `eq.${userId}`,
+        limit: '1',
+      }
     )
-    const users = (await usersResponse.json()) as Array<{
-      id: string
-      role: string
-      email: string
-      full_name: string
-      school_id: string | null
-    }>
 
     const user = users[0]
     if (!user) {
       return json(res, 404, { error: 'User profile not found in public.users' })
     }
 
-    if (user.role !== 'teacher') {
-      return json(res, 400, { error: 'Only teacher accounts can bootstrap school setup' })
+    if (user.role !== 'teacher' && user.role !== 'admin') {
+      return json(res, 400, { error: 'Only teacher or admin accounts can bootstrap school setup' })
     }
 
     if (user.school_id) {
@@ -125,7 +85,7 @@ export default async function handler(req: any, res: any) {
 
     const schoolName = schoolNameInput.length >= 2 ? schoolNameInput : fallbackSchoolName(user.email)
 
-    const schoolInsertResponse = await supabaseRequest(
+    const schoolInsertResponse = await supabaseAdminRequest(
       supabaseUrl,
       serviceRoleKey,
       '/rest/v1/schools',
@@ -143,7 +103,7 @@ export default async function handler(req: any, res: any) {
       return json(res, 500, { error: 'Failed to create school record' })
     }
 
-    await supabaseRequest(
+    await supabaseAdminRequest(
       supabaseUrl,
       serviceRoleKey,
       `/rest/v1/users?id=eq.${userId}`,

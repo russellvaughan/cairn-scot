@@ -1,4 +1,4 @@
-export type UserRole = 'teacher' | 'parent' | 'student'
+export type UserRole = 'teacher' | 'parent' | 'student' | 'admin'
 
 export type CfELevel = 'early' | 'first' | 'second' | 'third_fourth' | 'senior'
 

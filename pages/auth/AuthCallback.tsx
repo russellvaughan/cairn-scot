@@ -19,10 +19,11 @@ const ROLE_ROUTES: Record<UserRole, string> = {
   teacher: '/teacher',
   parent: '/parent',
   student: '/student',
+  admin: '/admin',
 }
 
 const isUserRole = (value: string | null): value is UserRole =>
-  value === 'teacher' || value === 'parent' || value === 'student'
+  value === 'teacher' || value === 'parent' || value === 'student' || value === 'admin'
 
 type DbUserRow = {
   id: string
@@ -42,6 +43,28 @@ function guessFullName(email?: string): string {
     .join(' ') || 'Cairn User'
 }
 
+async function callClaimEndpoint(
+  path: string,
+  accessToken: string,
+  body: Record<string, string>
+): Promise<Record<string, unknown>> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    throw new Error(String(payload?.error || 'Claim request failed'))
+  }
+
+  return payload as Record<string, unknown>
+}
+
 export default function AuthCallback({ onRoleResolved }: Props) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -52,6 +75,8 @@ export default function AuthCallback({ onRoleResolved }: Props) {
       const accessTokenFromHash = hashParams.get('access_token')
       const refreshTokenFromHash = hashParams.get('refresh_token')
       const roleFromQuery = searchParams.get('role')
+      const teacherInviteToken = searchParams.get('invite_teacher')
+      const parentLinkToken = searchParams.get('link_child')
       const roleFromStorage = localStorage.getItem('cairn_last_role')
 
       if (accessTokenFromHash) {
@@ -89,6 +114,7 @@ export default function AuthCallback({ onRoleResolved }: Props) {
 
       let resolvedRole: UserRole = preferredRole
       let needsTeacherSetup = false
+      let needsAdminSetup = false
 
       if (authUser?.id && accessToken) {
         try {
@@ -107,6 +133,9 @@ export default function AuthCallback({ onRoleResolved }: Props) {
             if (isUserRole(profile.role)) resolvedRole = profile.role
             if (resolvedRole === 'teacher' && !profile.school_id) {
               needsTeacherSetup = true
+            }
+            if (resolvedRole === 'admin' && !profile.school_id) {
+              needsAdminSetup = true
             }
           } else {
             const email = authUser.email || ''
@@ -134,9 +163,35 @@ export default function AuthCallback({ onRoleResolved }: Props) {
             if (resolvedRole === 'teacher' && !inserted[0]?.school_id) {
               needsTeacherSetup = true
             }
+            if (resolvedRole === 'admin' && !inserted[0]?.school_id) {
+              needsAdminSetup = true
+            }
           }
         } catch {
           // Keep auth flow resilient: route by preferred role even if profile bootstrap fails.
+        }
+      }
+
+      if (resolvedRole === 'teacher' && teacherInviteToken) {
+        try {
+          const claimResult = await callClaimEndpoint('/api/auth/claim-teacher-invite', accessToken, {
+            token: teacherInviteToken,
+          })
+          if (typeof claimResult.school_id === 'string' && claimResult.school_id.length > 0) {
+            needsTeacherSetup = false
+          }
+        } catch {
+          // Invite links are best effort; teacher can still use setup fallback.
+        }
+      }
+
+      if (resolvedRole === 'parent' && parentLinkToken) {
+        try {
+          await callClaimEndpoint('/api/auth/claim-parent-link', accessToken, {
+            token: parentLinkToken,
+          })
+        } catch {
+          // Parent can still access their account even if link claim fails.
         }
       }
 
@@ -147,7 +202,12 @@ export default function AuthCallback({ onRoleResolved }: Props) {
         window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`)
       }
 
-      const nextPath = resolvedRole === 'teacher' && needsTeacherSetup ? '/teacher/setup' : ROLE_ROUTES[resolvedRole]
+      const nextPath =
+        resolvedRole === 'teacher' && needsTeacherSetup
+          ? '/teacher/setup'
+          : resolvedRole === 'admin' && needsAdminSetup
+            ? '/admin/setup'
+            : ROLE_ROUTES[resolvedRole]
       navigate(nextPath, { replace: true })
     }
 
