@@ -66,6 +66,7 @@ export default function LogAchievement() {
   const [selectedPupil, setSelectedPupil] = useState<Pupil>(mockPupils[0])
   const [showPupilPicker, setShowPupilPicker] = useState(false)
   const [description, setDescription] = useState('')
+  const [descriptionFocused, setDescriptionFocused] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiShown, setAiShown] = useState(false)
   const [selectedEO, setSelectedEO] = useState<string | null>(null)
@@ -224,11 +225,11 @@ export default function LogAchievement() {
         <div className="label-xs" style={{ marginBottom: 8 }}>What happened?</div>
         <div style={{
           background: 'var(--color-white)',
-          border: `1.5px solid ${description.length > 0 ? 'var(--color-gold)' : 'var(--color-border)'}`,
+          border: `1.5px solid ${descriptionFocused ? 'var(--color-gold)' : 'var(--color-border)'}`,
           borderRadius: 'var(--radius-lg)',
-          padding: '12px 14px',
+          padding: '16px 20px',
           marginBottom: 16,
-          boxShadow: description.length > 0 ? '0 0 0 3px rgba(194,123,43,0.08)' : 'none',
+          boxShadow: descriptionFocused ? '0 0 0 3px rgba(227,106,44,0.16)' : 'none',
           transition: 'border-color 0.2s, box-shadow 0.2s',
         }}>
           <textarea
@@ -236,17 +237,19 @@ export default function LogAchievement() {
             className="field"
             style={{
               border: 'none',
-              padding: '2px 2px 0',
+              padding: 0,
               margin: 0,
-              lineHeight: 1.45,
+              lineHeight: 1.5,
               boxShadow: 'none',
-              minHeight: 56,
+              minHeight: 82,
               resize: 'none',
             }}
             placeholder="Describe what the pupil did…"
             value={description}
             onChange={e => setDescription(e.target.value)}
-            rows={2}
+            onFocus={() => setDescriptionFocused(true)}
+            onBlur={() => setDescriptionFocused(false)}
+            rows={3}
           />
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -414,7 +417,7 @@ export default function LogAchievement() {
               </div>
             )}
             <div className="label-xs" style={{ marginBottom: 10 }}>Curriculum area</div>
-            <div className="scroll-row" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, maxWidth: '100%', minWidth: 0 }}>
               {MANUAL_AREAS.map(area => (
                 <button key={area}
                   onClick={() => { setManualArea(area); setSelectedEO(null) }}

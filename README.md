@@ -77,6 +77,31 @@ You should see 8 rows, one for each curriculum area.
 
 ---
 
+## Step 5.1: Add Official CfE Benchmarks (for real AI suggestions)
+
+To use official benchmark statements (not mock/starter rows):
+
+1. Run `schema-benchmarks.sql` in Supabase SQL Editor
+2. Run this command locally:
+
+```bash
+npm run build:benchmarks
+```
+
+Requirements: internet access, `curl`, and `pdftotext` (Poppler).
+
+3. Import generated CSV `data/cfe-benchmarks-official-full.csv` into table `cfe_benchmarks`
+4. Run:
+
+```sql
+select public.link_benchmarks_from_related_codes() as links_created;
+```
+
+Full guide:
+- `docs/cfe-benchmark-ingestion-guide.md`
+
+---
+
 ## Step 6: Set up authentication
 
 1. In Supabase, go to **Authentication → Providers**

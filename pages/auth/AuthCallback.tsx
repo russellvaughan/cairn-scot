@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { UserRole } from '../../types'
+import { fetchAuthUser, getStoredAccessToken, setStoredSession, setStoredUserId } from '../../lib/supabase'
 
 interface Props {
   onRoleResolved: (role: UserRole) => void
@@ -22,32 +23,22 @@ export default function AuthCallback({ onRoleResolved }: Props) {
   useEffect(() => {
     const resolve = async () => {
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-      const accessToken = hashParams.get('access_token')
+      const accessTokenFromHash = hashParams.get('access_token')
+      const refreshTokenFromHash = hashParams.get('refresh_token')
       const roleFromQuery = searchParams.get('role')
       const roleFromStorage = localStorage.getItem('cairn_last_role')
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
-      const supabaseKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as
-        | string
-        | undefined
+      if (accessTokenFromHash) {
+        setStoredSession(accessTokenFromHash, refreshTokenFromHash)
+      }
 
       let roleFromProfile: string | null = null
+      const accessToken = accessTokenFromHash || getStoredAccessToken()
 
-      if (accessToken && supabaseUrl && supabaseKey) {
-        try {
-          const res = await fetch(`${supabaseUrl.replace(/\/+$/, '')}/auth/v1/user`, {
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${accessToken}`,
-            },
-          })
-          if (res.ok) {
-            const payload = await res.json()
-            roleFromProfile = payload?.user_metadata?.role ?? payload?.app_metadata?.role ?? null
-          }
-        } catch {
-          // Fallback resolution is handled below.
-        }
+      const authUser = await fetchAuthUser(accessToken)
+      if (authUser?.id) {
+        setStoredUserId(authUser.id)
+        roleFromProfile = (authUser.user_metadata?.role as string | null) ?? (authUser.app_metadata?.role as string | null) ?? null
       }
 
       const resolvedRoleCandidate =
