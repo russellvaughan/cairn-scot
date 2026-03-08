@@ -1,4 +1,5 @@
 import { readEnv, readEnvOr } from '../_shared/env.js'
+import { readJsonBody, sendJson } from '../_shared/http.js'
 
 const CURRICULUM_AREAS = [
   'literacy_english',
@@ -111,15 +112,6 @@ Rules:
 - Never invent reference codes — only use codes from the list provided
 - Keep reasons short (max 15 words)
 - If the description is too vague, return your best guess with confidence "possible" for all suggestions`
-
-function jsonResponse(status: number, payload: unknown): Response {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-}
 
 function normalizeText(input: string): string {
   return input.replace(/\s+/g, ' ').trim()
@@ -348,37 +340,37 @@ function manualFallback(level: CfELevel): SuggestionResponse {
   }
 }
 
-export default async function handler(req: Request) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
-    return jsonResponse(405, { error: 'Method not allowed' })
+    return sendJson(res, 405, { error: 'Method not allowed' })
   }
 
   try {
-    const body = await req.json().catch(() => ({}))
+    const body = await readJsonBody(req)
     const description = normalizeText(String(body.description || ''))
     const yearGroup = normalizeText(String(body.year_group || ''))
     const level = String(body.level || '') as CfELevel
     const refine = body.refine === true
 
     if (!description || description.length < MIN_AI_CHARS) {
-      return jsonResponse(200, manualFallback(LEVELS.includes(level) ? level : 'second'))
+      return sendJson(res, 200, manualFallback(LEVELS.includes(level) ? level : 'second'))
     }
 
     if (!LEVELS.includes(level)) {
-      return jsonResponse(400, { error: 'Invalid level' })
+      return sendJson(res, 400, { error: 'Invalid level' })
     }
 
     const cacheKey = makeCacheKey(description, yearGroup, level)
     if (!refine) {
       const cached = getCached(cacheKey)
-      if (cached) return jsonResponse(200, cached)
+      if (cached) return sendJson(res, 200, cached)
     }
 
     const supabaseUrl = readEnv('SUPABASE_URL')
     const serviceRoleKey = readEnv('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceRoleKey) {
       console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
-      return jsonResponse(200, manualFallback(level))
+      return sendJson(res, 200, manualFallback(level))
     }
 
     const preferredAreas = inferAreas(description)
@@ -410,7 +402,7 @@ export default async function handler(req: Request) {
           }
         )
 
-    if (!allCandidates.length) return jsonResponse(200, manualFallback(level))
+    if (!allCandidates.length) return sendJson(res, 200, manualFallback(level))
 
     const benchmarks = await supabaseSelect<DbBenchmarkRow[]>(
       supabaseUrl,
@@ -453,7 +445,7 @@ export default async function handler(req: Request) {
     const anthropicKey = readEnv('ANTHROPIC_API_KEY')
     if (!anthropicKey) {
       console.error('Missing ANTHROPIC_API_KEY')
-      return jsonResponse(200, manualFallback(level))
+      return sendJson(res, 200, manualFallback(level))
     }
 
     let bestResult: SuggestionResponse | null = null
@@ -485,9 +477,9 @@ export default async function handler(req: Request) {
       if (!bestResult || !isLowConfidence(bestResult.suggestions)) {
         if (bestResult) {
           setCached(cacheKey, bestResult)
-          return jsonResponse(200, bestResult)
+          return sendJson(res, 200, bestResult)
         }
-        return jsonResponse(200, manualFallback(level))
+        return sendJson(res, 200, manualFallback(level))
       }
     }
 
@@ -514,17 +506,17 @@ export default async function handler(req: Request) {
       }
 
       if (!refine) setCached(cacheKey, finalResponse)
-      return jsonResponse(200, finalResponse)
+      return sendJson(res, 200, finalResponse)
     }
 
     if (bestResult) {
       if (!refine) setCached(cacheKey, bestResult)
-      return jsonResponse(200, bestResult)
+      return sendJson(res, 200, bestResult)
     }
 
-    return jsonResponse(200, manualFallback(level))
+    return sendJson(res, 200, manualFallback(level))
   } catch (error) {
     console.error('Suggestion route failed', error)
-    return jsonResponse(200, manualFallback('second'))
+    return sendJson(res, 200, manualFallback('second'))
   }
 }

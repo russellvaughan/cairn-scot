@@ -2,12 +2,12 @@ import { getInviteSigningSecret, verifySignedToken } from '../_shared/invite-tok
 import {
   authUserFromToken,
   getSupabaseServerConfig,
-  jsonResponse,
   normalizeText,
   parseBearerToken,
   supabaseAdminRequest,
   supabaseAdminSelect,
 } from '../_shared/supabase-admin.js'
+import { readJsonBody, sendJson } from '../_shared/http.js'
 
 type ParentLinkTokenPayload = {
   typ: 'parent_link'
@@ -23,33 +23,33 @@ type DbUserRow = {
   school_id: string | null
 }
 
-export default async function handler(req: Request) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
-    return jsonResponse(405, { error: 'Method not allowed' })
+    return sendJson(res, 405, { error: 'Method not allowed' })
   }
 
   try {
     const { serviceRoleKey, supabaseUrl } = getSupabaseServerConfig()
     const accessToken = parseBearerToken(req)
     if (!accessToken) {
-      return jsonResponse(401, { error: 'Missing bearer token' })
+      return sendJson(res, 401, { error: 'Missing bearer token' })
     }
 
-    const body = await req.json().catch(() => ({}))
+    const body = await readJsonBody(req)
     const token = normalizeText(String(body.token || ''))
     if (!token) {
-      return jsonResponse(400, { error: 'token is required' })
+      return sendJson(res, 400, { error: 'token is required' })
     }
 
     const authUser = await authUserFromToken(supabaseUrl, serviceRoleKey, accessToken)
     if (!authUser?.id) {
-      return jsonResponse(401, { error: 'Could not validate session' })
+      return sendJson(res, 401, { error: 'Could not validate session' })
     }
 
     const secret = getInviteSigningSecret(serviceRoleKey)
     const payload = await verifySignedToken<ParentLinkTokenPayload>(token, secret)
     if (!payload || payload.typ !== 'parent_link' || !payload.school_id || !payload.pupil_id) {
-      return jsonResponse(400, { error: 'Invalid or expired parent link token' })
+      return sendJson(res, 400, { error: 'Invalid or expired parent link token' })
     }
 
     const users = await supabaseAdminSelect<DbUserRow[]>(
@@ -65,15 +65,15 @@ export default async function handler(req: Request) {
 
     const user = users[0]
     if (!user) {
-      return jsonResponse(404, { error: 'User profile not found in public.users' })
+      return sendJson(res, 404, { error: 'User profile not found in public.users' })
     }
 
     if (user.role !== 'parent') {
-      return jsonResponse(403, { error: 'Only parent accounts can claim parent links' })
+      return sendJson(res, 403, { error: 'Only parent accounts can claim parent links' })
     }
 
     if (user.school_id && user.school_id !== payload.school_id) {
-      return jsonResponse(409, { error: 'This account is already linked to a different school' })
+      return sendJson(res, 409, { error: 'This account is already linked to a different school' })
     }
 
     const pupils = await supabaseAdminSelect<Array<{ id: string; school_id: string }>>(
@@ -89,7 +89,7 @@ export default async function handler(req: Request) {
     )
 
     if (!pupils[0]?.id) {
-      return jsonResponse(404, { error: 'Pupil not found for this school link' })
+      return sendJson(res, 404, { error: 'Pupil not found for this school link' })
     }
 
     await supabaseAdminRequest(
@@ -124,13 +124,13 @@ export default async function handler(req: Request) {
       )
     }
 
-    return jsonResponse(200, {
+    return sendJson(res, 200, {
       linked: true,
       school_id: payload.school_id,
       pupil_id: payload.pupil_id,
     })
   } catch (error) {
     console.error('claim-parent-link failed', error)
-    return jsonResponse(500, { error: 'Could not claim parent link' })
+    return sendJson(res, 500, { error: 'Could not claim parent link' })
   }
 }
